@@ -2,7 +2,6 @@
   --wood1:#6b4b2f;
   --wood2:#3e2615;
   --accent:#e53935;
-  --green:#2ecc71;
 }
 
 * {
@@ -31,15 +30,6 @@ html, body {
   margin-bottom:8px;
 }
 
-.top h1 {
-  margin:4px 0;
-}
-
-#playerName {
-  opacity:0.8;
-  font-size:14px;
-}
-
 .board-wrap {
   position:relative;
   width:100%;
@@ -64,47 +54,55 @@ canvas {
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:12px;
+  gap:10px;
   pointer-events:none;
 }
 
+/* 🎲 КУБИК */
 .dice {
-  width:90px;
-  height:90px;
-  background:white;
-  color:#111;
-  font-size:42px;
-  font-weight:800;
-  border-radius:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 14px 30px rgba(0,0,0,0.4);
+  width:64px;
+  height:64px;
+  background:#fff;
+  border-radius:14px;
+  position:relative;
+  box-shadow:0 12px 26px rgba(0,0,0,0.4);
 }
 
+.pip {
+  width:10px;
+  height:10px;
+  background:#111;
+  border-radius:50%;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* кнопка */
 button {
   pointer-events:auto;
   background:var(--accent);
   color:white;
   border:none;
-  padding:10px 28px;
-  font-size:18px;
+  padding:8px 20px;
+  font-size:16px;
   font-weight:700;
-  border-radius:14px;
-  box-shadow:0 8px 20px rgba(0,0,0,0.4);
+  border-radius:12px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.4);
 }
 
 button:active {
   transform:scale(0.95);
 }
 
-/* 🎲 анимация */
+/* анимация падения */
 .roll {
   animation: roll 0.9s cubic-bezier(.2,.9,.3,1);
 }
 
 @keyframes roll {
-  0% { transform:translateY(-300px) rotate(0deg); opacity:0 }
+  0% { transform:translateY(-260px) rotate(0deg); opacity:0 }
   60% { transform:translateY(20px) rotate(360deg); opacity:1 }
   100% { transform:translateY(0) rotate(450deg) }
 }

@@ -2,30 +2,32 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>Zombie Monopoly</title>
 
-  <!-- Telegram SDK -->
+  <!-- Telegram Mini App -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div class="app">
 
-  <h1 class="title">🧟 Zombie Monopoly</h1>
+  <header class="top">
+    <h1>🧟 Zombie Monopoly</h1>
+    <span id="playerName">Игрок</span>
+  </header>
 
   <div class="board-wrap">
     <canvas id="board" width="900" height="900"></canvas>
 
-    <!-- ОДИН КУБИК -->
-    <div class="dice-area">
-      <div class="dice" id="dice">?</div>
+    <!-- Центр -->
+    <div class="center-ui">
+      <div id="dice" class="dice">?</div>
+      <button id="rollBtn">ROLL</button>
     </div>
   </div>
-
-  <button class="btn" id="rollBtn">Кинуть кубик</button>
 
 </div>
 

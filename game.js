@@ -10,9 +10,8 @@ const cell = canvas.width / SIZE;
 const dice = document.getElementById("dice");
 const rollBtn = document.getElementById("rollBtn");
 
-/* ---------------- КУБИК ---------------- */
-
-const pipsMap = {
+/* ----- КУБИК С ТОЧКАМИ ----- */
+const pips = {
   1:[[50,50]],
   2:[[25,25],[75,75]],
   3:[[25,25],[50,50],[75,75]],
@@ -21,9 +20,9 @@ const pipsMap = {
   6:[[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]]
 };
 
-function setDice(val){
+function drawDice(n){
   dice.innerHTML="";
-  pipsMap[val].forEach(p=>{
+  pips[n].forEach(p=>{
     const d=document.createElement("div");
     d.className="pip";
     d.style.left=p[0]+"%";
@@ -32,113 +31,92 @@ function setDice(val){
   });
 }
 
-/* ---------------- ИГРА ---------------- */
-
-let playerPos = 0;
-let money = 1000;
-let buildings = 2;
-
-/* периметр */
-const path = [];
-(function buildPath(){
-  for(let i=0;i<SIZE;i++) path.push({x:i,y:SIZE-1}); // низ
-  for(let j=SIZE-2;j>=0;j--) path.push({x:SIZE-1,y:j}); // право
-  for(let i=SIZE-2;i>=0;i--) path.push({x:i,y:0}); // верх
-  for(let j=1;j<SIZE-1;j++) path.push({x:0,y:j}); // лево
+/* ----- ДОСКА ----- */
+const path=[];
+(function(){
+  for(let i=0;i<SIZE;i++) path.push({x:i,y:SIZE-1});
+  for(let j=SIZE-2;j>=0;j--) path.push({x:SIZE-1,y:j});
+  for(let i=SIZE-2;i>=0;i--) path.push({x:i,y:0});
+  for(let j=1;j<SIZE-2;j++) path.push({x:0,y:j});
 })();
 
+let player=0;
+let buildings=2;
+let money=1000;
+
 /* спец клетки */
-const CELLS = {
-  INFECT: path.length - (SIZE*2 - 1), // верх левый
-  CHOICE: path.length - (SIZE - 1),    // верх правый
-  ATTACK: SIZE - 1                     // низ правый
-};
+const INFECT = path.length-(SIZE*2-1);
+const CHOICE = path.length-(SIZE-1);
+const ATTACK = SIZE-1;
 
-/* ---------------- БРОСОК ---------------- */
-
-function rollDice(){
-  const val = Math.floor(Math.random()*6)+1;
+/* ----- БРОСОК ----- */
+rollBtn.onclick=()=>{
+  const v=Math.floor(Math.random()*6)+1;
   dice.classList.remove("roll");
-  setDice(1);
-
+  drawDice(1);
   setTimeout(()=>{
     dice.classList.add("roll");
     setTimeout(()=>{
-      setDice(val);
-      movePlayer(val);
-      tg.HapticFeedback.impactOccurred("medium");
-    },700);
-  },20);
-}
+      drawDice(v);
+      move(v);
+    },600);
+  },30);
+};
 
-rollBtn.onclick = rollDice;
-
-/* ---------------- ДВИЖЕНИЕ ---------------- */
-
-function movePlayer(steps){
+function move(steps){
   let i=0;
-  const interval = setInterval(()=>{
-    playerPos = (playerPos+1)%path.length;
-    drawBoard();
+  const t=setInterval(()=>{
+    player=(player+1)%path.length;
+    draw();
     i++;
     if(i>=steps){
-      clearInterval(interval);
-      handleCell();
+      clearInterval(t);
+      cellAction();
     }
-  },300);
+  },250);
 }
 
-/* ---------------- ЛОГИКА КЛЕТОК ---------------- */
-
-function handleCell(){
-  if(playerPos===CELLS.INFECT){
-    alert("☣️ ЗАРАЖЕНИЕ!");
-  }
-  if(playerPos===CELLS.CHOICE){
-    alert("❓ ВЫБОР КЛЕТКИ");
-  }
-  if(playerPos===CELLS.ATTACK){
-    const tax = buildings * 100;
-    money -= tax;
-    alert(`⚔️ АТАКА!\n-${tax} 💸`);
+function cellAction(){
+  if(player===INFECT) alert("☣️ ЗАРАЖЕНИЕ");
+  if(player===CHOICE) alert("❓ ВЫБОР КЛЕТКИ");
+  if(player===ATTACK){
+    const tax=buildings*100;
+    money-=tax;
+    alert(`⚔️ АТАКА\n-${tax}`);
   }
 }
 
-/* ---------------- РЕНДЕР ---------------- */
-
-function drawBoard(){
+/* ----- РЕНДЕР ----- */
+function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for(let i=0;i<SIZE;i++){
-    for(let j=0;j<SIZE;j++){
-      if(i===0||j===0||i===SIZE-1||j===SIZE-1){
-        ctx.strokeRect(i*cell,j*cell,cell,cell);
-
+  for(let x=0;x<SIZE;x++){
+    for(let y=0;y<SIZE;y++){
+      if(x===0||y===0||x===SIZE-1||y===SIZE-1){
+        ctx.strokeRect(x*cell,y*cell,cell,cell);
         ctx.beginPath();
-        ctx.fillStyle="#aaa";
-        ctx.arc(i*cell+cell/2,j*cell+cell/2,cell*0.13,0,Math.PI*2);
+        ctx.arc(x*cell+cell/2,y*cell+cell/2,cell*0.12,0,Math.PI*2);
+        ctx.fillStyle="#999";
         ctx.fill();
       }
     }
   }
 
-  /* спец клетки */
-  drawCorner(0,0,"☣️");
-  drawCorner(SIZE-1,0,"❓");
-  drawCorner(SIZE-1,SIZE-1,"⚔️");
+  corner(0,0,"☣️");
+  corner(SIZE-1,0,"❓");
+  corner(SIZE-1,SIZE-1,"⚔️");
 
-  /* игрок */
-  const p = path[playerPos];
+  const p=path[player];
   ctx.beginPath();
-  ctx.fillStyle="#e53935";
   ctx.arc(p.x*cell+cell/2,p.y*cell+cell/2,cell*0.18,0,Math.PI*2);
+  ctx.fillStyle="#e53935";
   ctx.fill();
 }
 
-function drawCorner(x,y,text){
-  ctx.fillStyle="#111";
-  ctx.font="bold 14px Arial";
-  ctx.fillText(text,x*cell+cell*0.35,y*cell+cell*0.65);
+function corner(x,y,t){
+  ctx.font="14px Arial";
+  ctx.fillText(t,x*cell+10,y*cell+20);
 }
 
-drawBoard();
+draw();
+drawDice(1);

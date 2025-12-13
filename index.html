@@ -1,34 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zombie Monopoly</title>
-
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
- 
+
 <div class="app">
+  <canvas id="board" width="900" height="900"></canvas>
 
-  <header class="top">
-    <h1>🧟 Zombie Monopoly</h1>
-  </header>
-
-  <div class="board-wrap">
-    <canvas id="board" width="900" height="900"></canvas>
-
-    <div class="center-ui">
-      <div id="dice" class="dice">
-        <div class="pip p1"></div>
-      </div>
-      <button id="rollBtn">Бросить кубик</button>
-    </div>
+  <div class="ui">
+    <div id="dice" class="dice"></div>
+    <button id="rollBtn">Бросить кубик</button>
   </div>
-
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

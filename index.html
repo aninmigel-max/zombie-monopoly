@@ -2,59 +2,57 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Zombie Monopoly</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div class="app">
-  <header class="top-bar">
-    <div class="balance">💰 <span id="money">1000</span> $</div>
-    <h1>Zombie Monopoly</h1>
+<div class="app-container">
+  <header class="main-header">
+    <div class="user-stats">
+      <span class="stat-item">💰 <span id="money">1000</span></span>
+    </div>
+    <h1 class="logo">Zombie Monopoly</h1>
+    <div class="placeholder"></div>
   </header>
 
-  <div id="game-screen" class="tab-content">
-    <div class="board-wrap">
-      <canvas id="board" width="600" height="600"></canvas>
-      <div class="center-ui">
-        <div id="dice" class="dice"></div>
-        <button id="rollBtn">Бросить кубик</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="houses-screen" class="tab-content" style="display:none;">
-    <div class="houses-list">
-      <h2>🏘 Твоя недвижимость</h2>
-      <div class="house-item">
-        <div class="house-info">
-          <span class="house-icon">🏚</span>
-          <div>
-            <div class="house-name">Заброшка</div>
-            <div class="house-level">Уровень: <span id="h1-lvl">1</span></div>
-          </div>
+  <main class="content">
+    <section id="game-screen" class="tab-pane active">
+      <div class="board-area">
+        <canvas id="board" width="600" height="600"></canvas>
+        <div class="dice-overlay">
+          <div id="dice" class="dice-box"></div>
+          <button id="rollBtn">Бросить кубик</button>
         </div>
-        <button class="buy-btn" onclick="upgradeHouse(1)">Улучшить (200$)</button>
       </div>
-      
-      <div class="house-item">
-        <div class="house-info">
-          <span class="house-icon">🏢</span>
-          <div>
-            <div class="house-name">Торговый центр</div>
-            <div class="house-level">Заблокировано</div>
-          </div>
-        </div>
-        <button class="buy-btn" disabled>5000$</button>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <nav class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('game', this)">🎮 Игра</div>
-    <div class="nav-item" onclick="switchTab('houses', this)">🏘 Домики</div>
+    <section id="houses-screen" class="tab-pane">
+      <div class="scroll-view">
+        <h2 class="section-title">Твои владения</h2>
+        <div class="house-card">
+          <div class="house-icon">🏚</div>
+          <div class="house-details">
+            <h3>Заброшенный дом</h3>
+            <p>Уровень: <span id="h1-lvl">1</span></p>
+          </div>
+          <button class="action-btn" onclick="upgradeHouse(1)">200$</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tab-bar">
+    <button class="tab-item active" onclick="switchTab('game', this)">
+      <span class="icon">🎮</span>
+      <span class="label">Игра</span>
+    </button>
+    <button class="tab-item" onclick="switchTab('houses', this)">
+      <span class="icon">🏘</span>
+      <span class="label">Домики</span>
+    </button>
   </nav>
 </div>
 

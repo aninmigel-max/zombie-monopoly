@@ -3,73 +3,126 @@ tg.expand();
 
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
+const moneyEl = document.getElementById("money");
 
+// Настройки игры
 const SIZE = 11;
 const cell = canvas.width / SIZE;
+let balance = 1000;
+let playerPos = 0;
+let cellsCoords = [];
 
-const dice = document.getElementById("dice");
-const rollBtn = document.getElementById("rollBtn");
+// Генерация координат клеток по периметру (всего 40 клеток)
+function initPath() {
+    for (let i = 0; i < SIZE; i++) cellsCoords.push({x: i, y: 0}); // Верх
+    for (let i = 1; i < SIZE; i++) cellsCoords.push({x: SIZE-1, y: i}); // Право
+    for (let i = SIZE-2; i >= 0; i--) cellsCoords.push({x: i, y: SIZE-1}); // Низ
+    for (let i = SIZE-2; i > 0; i--) cellsCoords.push({x: 0, y: i}); // Лево
+}
 
-/* 🎲 точки кубика */
+// Отрисовка доски
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Рисуем клетки
+    cellsCoords.forEach((c, index) => {
+        ctx.strokeStyle = "#2c3e50";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(c.x * cell, c.y * cell, cell, cell);
+        
+        // Декор клеток
+        if (index % 5 === 0) {
+            ctx.fillStyle = "rgba(229, 57, 53, 0.2)";
+            ctx.fillRect(c.x * cell, c.y * cell, cell, cell);
+        }
+    });
+
+    // Рисуем Старт
+    ctx.fillStyle = "#111";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("START", cellsCoords[0].x * cell + 5, cellsCoords[0].y * cell + 15);
+
+    // Рисуем Игрока (Зомби)
+    const p = cellsCoords[playerPos];
+    ctx.font = "34px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🧟", p.x * cell + cell/2, p.y * cell + cell/2);
+}
+
+// Кубик
 const pipsMap = {
-  1: [[50,50]],
-  2: [[25,25],[75,75]],
-  3: [[25,25],[50,50],[75,75]],
-  4: [[25,25],[75,25],[25,75],[75,75]],
-  5: [[25,25],[75,25],[50,50],[25,75],[75,75]],
-  6: [[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]]
+    1: [4], 2: [0, 8], 3: [0, 4, 8],
+    4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
 };
 
-function setDice(value){
-  dice.innerHTML = "";
-  pipsMap[value].forEach(p=>{
-    const dot = document.createElement("div");
-    dot.className = "pip";
-    dot.style.left = p[0]+"%";
-    dot.style.top = p[1]+"%";
-    dice.appendChild(dot);
-  });
+function renderDice(val) {
+    const d = document.getElementById("dice");
+    d.innerHTML = "";
+    pipsMap[val].forEach(p => {
+        const dot = document.createElement("div");
+        dot.className = "pip";
+        d.appendChild(dot);
+    });
 }
 
-function rollDice(){
-  const value = Math.floor(Math.random()*6)+1;
-  dice.classList.remove("roll");
-  setDice(1);
+function rollDice() {
+    const btn = document.getElementById("rollBtn");
+    btn.disabled = true;
+    
+    const value = Math.floor(Math.random() * 6) + 1;
+    document.getElementById("dice").classList.add("roll-anim");
+    
+    tg.HapticFeedback.impactOccurred("light");
 
-  setTimeout(()=>{
-    dice.classList.add("roll");
-    setTimeout(()=>{
-      setDice(value);
-      tg.HapticFeedback.impactOccurred("medium");
-    },700);
-  },30);
+    setTimeout(() => {
+        document.getElementById("dice").classList.remove("roll-anim");
+        renderDice(value);
+        
+        // Перемещение
+        let oldPos = playerPos;
+        playerPos = (playerPos + value) % cellsCoords.length;
+        
+        // Если прошли через СТАРТ - даем денег
+        if (playerPos < oldPos) {
+            balance += 500;
+            updateUI();
+            tg.HapticFeedback.notificationOccurred("success");
+        }
+
+        draw();
+        btn.disabled = false;
+    }, 600);
 }
 
-rollBtn.onclick = rollDice;
+// Переключение вкладок
+function switchTab(tabId, el) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    document.getElementById(tabId + '-screen').style.display = 'block';
+    el.classList.add('active');
+}
 
-/* 🟩 ДОСКА */
-function drawBoard(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+function updateUI() {
+    moneyEl.innerText = balance;
+}
 
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-
-  for(let i=0;i<SIZE;i++){
-    for(let j=0;j<SIZE;j++){
-      if(i===0||j===0||i===SIZE-1||j===SIZE-1){
-        ctx.strokeRect(i*cell, j*cell, cell, cell);
-
-        ctx.beginPath();
-        ctx.fillStyle = ["#e74c3c","#2ecc71","#3498db","#f1c40f"][Math.floor(Math.random()*4)];
-        ctx.arc(i*cell+cell/2, j*cell+cell/2, cell*0.14, 0, Math.PI*2);
-        ctx.fill();
-      }
+function upgradeHouse(id) {
+    if (balance >= 200) {
+        balance -= 200;
+        let lvl = document.getElementById('h1-lvl');
+        lvl.innerText = parseInt(lvl.innerText) + 1;
+        updateUI();
+        tg.HapticFeedback.impactOccurred("medium");
+    } else {
+        tg.showAlert("Недостаточно денег!");
     }
-  }
-
-  ctx.font = "bold 12px Arial";
-  ctx.fillStyle = "#111";
-  ctx.fillText("START", cell*0.15, canvas.height - cell*0.15);
 }
 
-drawBoard();
+document.getElementById("rollBtn").onclick = rollDice;
+
+// Инициализация
+initPath();
+renderDice(1);
+draw();

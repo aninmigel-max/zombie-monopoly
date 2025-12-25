@@ -1,247 +1,349 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const canvas = document.getElementById("board");
+// --- НАСТРОЙКИ ---
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const toast = document.getElementById("msg-toast");
 
-// --- КОНФИГУРАЦИЯ ---
-let balance = 2000;
-let passiveIncome = 0; 
-let playerPos = 0; 
+// ЦВЕТА (Пастельные, как на картинке 3)
+const COLORS = {
+    RED: "#ff7675",     // Мини-игры
+    BLUE: "#74b9ff",    // Доп ход
+    GREEN: "#55efc4",   // Кейс
+    YELLOW: "#ffeaa7",  // Доход
+    ORANGE: "#fab1a0",  // Задания
+    PURPLE: "#a29bfe",  // ? (Вопрос)
+    CORNER: "#ffffff",  // Углы
+    TEXT: "#2d3436"
+};
 
-// НОВАЯ ПАЛИТРА (Soft / Pastel)
-const C_RED = "#ff6b6b";   // Мягкий коралловый
-const C_BLUE = "#54a0ff";  // Спокойный небесный
-const C_GREEN = "#1dd1a1"; // Мятный (не ядовитый)
-const C_YELLOW = "#feca57";// Теплый песочный
-const C_PURPLE = "#a29bfe";// Лавандовый
-const C_ORANGE = "#ff9f43";// Пастельный оранжевый// Задания
+// Состояние игрока
+let state = {
+    balance: 2000,
+    income: 0,
+    pos: 0,
+    isRolling: false,
+    buildings: [
+        { id: "base", name: "База", cost: 0, income: 0, bought: true },
+        { id: "cafe", name: "Кафе", cost: 500, income: 100, bought: false },
+        { id: "shop", name: "Магазин", cost: 1500, income: 250, bought: false },
+        { id: "hotel", name: "Отель", cost: 5000, income: 800, bought: false }
+    ]
+};
 
-// Схема периметра (40 клеток для поля 11x11)
-// 0=Start, 1-9=Left, 10=TopLeft, 11-19=Top, 20=TopRight, 21-29=Right, 30=BotRight, 31-39=Bot
-// Мы идем ПО ЧАСОВОЙ СТРЕЛКЕ: Старт (Низ-Лево) -> Вверх -> Вправо -> Вниз -> Влево -> Старт
-const boardMap = [
-    { type: "corner", text: "Start" }, // 0
-    { color: C_RED }, { color: C_PURPLE }, { color: C_GREEN }, { color: C_RED }, { color: C_YELLOW }, { color: C_BLUE }, { color: C_ORANGE }, { color: C_RED }, { color: C_GREEN }, // 1-9 (Left side going up)
-    { type: "corner", text: "Infection" }, // 10 (Top Left)
-    { color: C_RED }, { color: C_ORANGE }, { color: C_BLUE }, { color: C_PURPLE }, { color: C_YELLOW }, { color: C_GREEN }, { color: C_RED }, { color: C_BLUE }, { color: C_ORANGE }, // 11-19 (Top)
-    { type: "corner", text: "Choice" }, // 20 (Top Right)
-    { color: C_GREEN }, { color: C_RED }, { color: C_YELLOW }, { color: C_PURPLE }, { color: C_BLUE }, { color: C_RED }, { color: C_ORANGE }, { color: C_GREEN }, { color: C_YELLOW }, // 21-29 (Right side going down)
-    { type: "corner", text: "Attack" }, // 30 (Bottom Right)
-    { color: C_RED }, { color: C_BLUE }, { color: C_PURPLE }, { color: C_YELLOW }, { color: C_GREEN }, { color: C_ORANGE }, { color: C_RED }, { color: C_BLUE }, { color: C_PURPLE } // 31-39 (Bottom)
-];
-
-// Координаты клеток
-const cellsCoords = [];
+// --- КАРТА (40 клеток) ---
+// Генерируем карту вручную, чтобы расставить цвета
 const SIZE = 11;
-const cellW = canvas.width / SIZE;
+const boardMap = [];
 
-// Генерация пути (от 0 вверх по часовой)
-function initCoords() {
-    // 0 -> 10 (Вверх по левому краю)
-    for(let y=SIZE-1; y>=0; y--) cellsCoords.push({x:0, y:y});
-    // 11 -> 20 (Вправо по верхнему краю)
-    for(let x=1; x<SIZE; x++) cellsCoords.push({x:x, y:0});
-    // 21 -> 30 (Вниз по правому краю)
-    for(let y=1; y<SIZE; y++) cellsCoords.push({x:SIZE-1, y:y});
-    // 31 -> 39 (Влево по нижнему краю)
-    for(let x=SIZE-2; x>0; x--) cellsCoords.push({x:x, y:SIZE-1});
+function initMap() {
+    // 0: Start (Низ-Лево)
+    boardMap.push({ type: "START", color: COLORS.CORNER, text: "Start" });
+    
+    // 1-9: Левая сторона (вверх)
+    const leftColors = [COLORS.RED, COLORS.PURPLE, COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.BLUE, COLORS.ORANGE, COLORS.RED, COLORS.GREEN];
+    leftColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+
+    // 10: Infection (Верх-Лево)
+    boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Infection" });
+
+    // 11-19: Верхняя сторона (вправо)
+    const topColors = [COLORS.RED, COLORS.ORANGE, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED, COLORS.BLUE, COLORS.ORANGE];
+    topColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+
+    // 20: Choice (Верх-Право)
+    boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Choice" });
+
+    // 21-29: Правая сторона (вниз)
+    const rightColors = [COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.PURPLE, COLORS.BLUE, COLORS.RED, COLORS.ORANGE, COLORS.GREEN, COLORS.YELLOW];
+    rightColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+
+    // 30: Attack (Низ-Право)
+    boardMap.push({ type: "ATTACK", color: COLORS.CORNER, text: "Attack" });
+
+    // 31-39: Нижняя сторона (влево)
+    const botColors = [COLORS.RED, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.ORANGE, COLORS.RED, COLORS.BLUE, COLORS.PURPLE];
+    botColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+}
+
+// Вычисляем координаты для отрисовки
+let cellCoords = [];
+function calcCoords() {
+    cellCoords = [];
+    // Важно: Канвас имеет внутреннее разрешение выше для четкости
+    const W = canvas.width; 
+    const step = W / SIZE;
+
+    // 0 -> 10 (Вверх)
+    for(let y=SIZE-1; y>=0; y--) cellCoords.push({x: 0, y: y});
+    // 11 -> 20 (Вправо)
+    for(let x=1; x<SIZE; x++) cellCoords.push({x: x, y: 0});
+    // 21 -> 30 (Вниз)
+    for(let y=1; y<SIZE; y++) cellCoords.push({x: SIZE-1, y: y});
+    // 31 -> 39 (Влево)
+    for(let x=SIZE-2; x>0; x--) cellCoords.push({x: x, y: SIZE-1});
+
+    // Добавляем размеры клетки в координаты
+    cellCoords = cellCoords.map(c => ({
+        x: c.x * step,
+        y: c.y * step,
+        w: step,
+        h: step
+    }));
 }
 
 // --- ОТРИСОВКА ---
-function drawBoard() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    
-    // 1. Сетка и цвета
-    cellsCoords.forEach((c, i) => {
-        let conf = boardMap[i] || {};
-        let px = c.x * cellW;
-        let py = c.y * cellW;
+function draw() {
+    // Чистим
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Рамка клетки
-        ctx.strokeStyle = "#333";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px, py, cellW, cellW);
+    // Рисуем клетки
+    boardMap.forEach((cell, i) => {
+        const c = cellCoords[i];
+        
+        // Рамка
+        ctx.strokeStyle = "#b2bec3";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(c.x, c.y, c.w, c.h);
 
-        // Угловые клетки
-        if (conf.type === "corner") {
+        // Заливка (если угол или цветной)
+        if (cell.text) {
+            // УГЛЫ
             ctx.fillStyle = "#fff";
-            ctx.fillRect(px+1, py+1, cellW-2, cellW-2);
+            ctx.fillRect(c.x+1, c.y+1, c.w-2, c.h-2);
+            
             ctx.fillStyle = "#000";
-            ctx.font = "bold 10px sans-serif";
+            ctx.font = "bold 24px Arial"; // Крупный шрифт для Retina
             ctx.textAlign = "center";
-            ctx.fillText(conf.text, px + cellW/2, py + cellW/2);
-            if(conf.text === "Attack") {
-                ctx.fillStyle = "red";
-                ctx.fillText("-100$", px + cellW/2, py + cellW/2 + 12);
+            ctx.textBaseline = "middle";
+            ctx.fillText(cell.text, c.x + c.w/2, c.y + c.w/2);
+            
+            if(cell.type === "ATTACK") {
+                ctx.fillStyle = COLORS.RED;
+                ctx.font = "bold 18px Arial";
+                ctx.fillText("-100$", c.x + c.w/2, c.y + c.w/2 + 25);
             }
-        } 
-        // Обычные клетки (цветные круги)
-        else if (conf.color) {
+        } else {
+            // ЦВЕТНЫЕ КРУГИ (как на картинке 3)
             ctx.beginPath();
-            ctx.arc(px + cellW/2, py + cellW/2, cellW * 0.35, 0, Math.PI*2);
-            ctx.fillStyle = conf.color;
+            let r = c.w * 0.35; // Радиус круга
+            ctx.arc(c.x + c.w/2, c.y + c.w/2, r, 0, Math.PI*2);
+            ctx.fillStyle = cell.color;
             ctx.fill();
-            ctx.strokeStyle = "#000"; // Обводка круга
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            
+            // Если это "?" (Фиолетовый)
+            if(cell.color === COLORS.PURPLE) {
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 30px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("?", c.x + c.w/2, c.y + c.w/2);
+            }
         }
     });
 
-    // 2. Игрок
-    let p = cellsCoords[playerPos];
-    ctx.font = "30px serif";
+    // РИСУЕМ ИГРОКА
+    const p = cellCoords[state.pos];
+    ctx.font = "60px serif"; // Эмодзи покрупнее
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("🧟", p.x * cellW + cellW/2, p.y * cellW + cellW/2);
+    ctx.fillText("🧟", p.x + p.w/2, p.y + p.w/2 - 5); // Чуть выше центра
 }
 
 // --- ЛОГИКА ИГРЫ ---
-function showToast(msg) {
-    toast.innerText = msg;
-    toast.style.opacity = 1;
-    setTimeout(()=>toast.style.opacity=0, 2000);
-}
 
-function processLand() {
-    let cell = boardMap[playerPos] || {};
-    
-    // Логика АТАКИ
-    if (cell.text === "Attack") {
-        let hasSchool = buildings.find(b=>b.id==="school" && b.bought);
-        if(!hasSchool) {
-            balance -= 100;
-            showToast("Атака! Налог -100$");
-            tg.HapticFeedback.notificationOccurred("error");
-        } else {
-            showToast("Школа защитила от налога!");
-            tg.HapticFeedback.notificationOccurred("success");
-        }
+function processCell() {
+    const cell = boardMap[state.pos];
+    const color = cell.color;
+
+    console.log("Встал на:", cell);
+
+    if (cell.type === "ATTACK") {
+        state.balance -= 100;
+        showToast("💥 Атака! -100$");
+        tg.HapticFeedback.notificationOccurred("error");
+    } 
+    else if (cell.type === "START") {
+        showToast("🏁 Круг пройден!");
     }
-    // Логика Цветов
-    else if (cell.color === C_YELLOW) {
-        let gain = 50;
-        balance += gain;
-        showToast(`Доход: +${gain}$`);
+    else if (color === COLORS.RED) {
+        showModal("🎮 Мини-игра", "Тут будет запущена мини-игра на реакцию!");
     }
-    
+    else if (color === COLORS.BLUE) {
+        showToast("🔵 Дополнительный ход!");
+        tg.HapticFeedback.notificationOccurred("success");
+        // Не блокируем кнопку броска, даем кинуть еще раз
+        return; 
+    }
+    else if (color === COLORS.GREEN) {
+        let prize = Math.floor(Math.random() * 200) + 50;
+        state.balance += prize;
+        showModal("📦 Кейс", `Вы нашли припасы! +${prize}$`);
+    }
+    else if (color === COLORS.YELLOW) {
+        let income = 100;
+        state.balance += income;
+        showToast(`💰 Прибыль +${income}$`);
+    }
+    else if (color === COLORS.ORANGE) {
+        showModal("📝 Задание", "Постройте 2 здания, чтобы получить награду.");
+    }
+    else if (color === COLORS.PURPLE) {
+        showModal("❓ Тайна", "Случайное событие...");
+    }
+
     updateUI();
 }
 
-// --- КУБИК ---
-const diceEl = document.getElementById("dice");
-const pipsMap = {
+// --- КУБИК И ДВИЖЕНИЕ ---
+const rollBtn = document.getElementById("rollBtn");
+const diceEl = document.getElementById("dice-container");
+
+// Точки на кубике
+const pips = {
     1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]
 };
 
-function rollDice() {
-    document.getElementById("rollBtn").disabled = true;
-    let val = Math.floor(Math.random()*6)+1;
-    
-    diceEl.classList.add("roll-anim");
-    diceEl.innerHTML = ""; // очистим
-    tg.HapticFeedback.impactOccurred("medium");
-
-    setTimeout(()=>{
-        diceEl.classList.remove("roll-anim");
-        // Рисуем точки
-        pipsMap[val].forEach(i => {
-            let pip = document.createElement("div");
-            pip.className = "pip";
-            diceEl.appendChild(pip);
-        });
-
-        // Двигаем
-        let steps = val;
-        let interval = setInterval(()=>{
-            playerPos = (playerPos + 1) % cellsCoords.length;
-            drawBoard();
-            steps--;
-            if(steps <= 0) {
-                clearInterval(interval);
-                processLand();
-                
-                // Проверка круга (если прошли Старт)
-                if(playerPos < val) { // простой детектор круга
-                     // баланс += стартБонус
-                }
-                
-                document.getElementById("rollBtn").disabled = false;
-            }
-        }, 100);
-    }, 600);
-}
-
-document.getElementById("rollBtn").onclick = rollDice;
-
-// --- ЗДАНИЯ (ДЕРЕВО ПРОКАЧКИ) ---
-// id: уник, name: имя, cost: цена, desc: описание, parent: id родителя (кто нужен до)
-const buildings = [
-    { id: "base", name: "База", cost: 0, desc: "Стартовая точка", bought: true, parent: null },
-    { id: "shop", name: "Магазин", cost: 0, desc: "+1 кубик/час (coming soon)", bought: false, parent: "base" }, // Бесплатно по схеме? Или цена?
-    { id: "cafe", name: "Кафе", cost: 500, desc: "+100$/час", bought: false, parent: "shop", income: 100 },
-    { id: "armory", name: "Оружейная", cost: 2000, desc: "Бонус на старте", bought: false, parent: "shop" },
-    { id: "school", name: "Школа", cost: 5000, desc: "Иммунитет к Атаке", bought: false, parent: "armory" },
-    { id: "mine", name: "Шахта", cost: 10000, desc: "+1 кейс/3 дня", bought: false, parent: "school" }
-];
-
-function renderBuildings() {
-    const list = document.getElementById("buildings-list");
-    list.innerHTML = "";
-
-    buildings.forEach(b => {
-        // Проверяем доступность (родитель должен быть куплен)
-        let parent = buildings.find(p => p.id === b.parent);
-        let locked = parent && !parent.bought;
-
-        let el = document.createElement("div");
-        el.className = `b-card ${locked ? 'locked' : ''} ${b.bought ? 'bought' : ''}`;
-        
-        let btnHTML = b.bought 
-            ? `<div class="bought-badge">✅</div>`
-            : `<button class="b-btn" onclick="buyBuilding('${b.id}')">Купить ${b.cost > 0 ? b.cost+'$' : 'Беспл'}</button>`;
-
-        el.innerHTML = `
-            <div class="b-info">
-                <h3>${b.name}</h3>
-                <p>${locked ? '🔒 Сначала купите предыдущее' : b.desc}</p>
-            </div>
-            ${btnHTML}
-        `;
-        list.appendChild(el);
+function renderDice(val) {
+    diceEl.innerHTML = "";
+    pips[val].forEach(i => {
+        let d = document.createElement("div");
+        d.className = "pip";
+        diceEl.appendChild(d);
     });
 }
 
-window.buyBuilding = function(id) {
-    let b = buildings.find(x => x.id === id);
-    if(balance >= b.cost) {
-        balance -= b.cost;
-        b.bought = true;
-        if(b.income) passiveIncome += b.income;
+rollBtn.onclick = () => {
+    if(state.isRolling) return;
+    state.isRolling = true;
+    rollBtn.disabled = true;
+
+    // Анимация
+    diceEl.classList.add("roll-anim");
+    let rollResult = Math.floor(Math.random() * 6) + 1;
+    
+    tg.HapticFeedback.impactOccurred("medium");
+
+    setTimeout(() => {
+        diceEl.classList.remove("roll-anim");
+        renderDice(rollResult);
         
-        tg.HapticFeedback.notificationOccurred("success");
+        // Движение по клеткам
+        let stepsLeft = rollResult;
+        let moveInt = setInterval(() => {
+            state.pos = (state.pos + 1) % 40;
+            
+            // Если прошли старт (переход с 39 на 0)
+            if (state.pos === 0) {
+                state.balance += 500; // Зарплата за круг
+                showToast("🏁 Прошел круг! +500$");
+            }
+
+            draw();
+            tg.HapticFeedback.selectionChanged();
+            stepsLeft--;
+
+            if (stepsLeft <= 0) {
+                clearInterval(moveInt);
+                state.isRolling = false;
+                rollBtn.disabled = false;
+                processCell(); // Обработка клетки
+            }
+        }, 150); // Скорость прыжка
+    }, 600);
+};
+
+// --- UI ФУНКЦИИ ---
+function updateUI() {
+    document.getElementById("balance").innerText = state.balance;
+    document.getElementById("income").innerText = state.income;
+}
+
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerText = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function showModal(title, text) {
+    document.getElementById("modal-title").innerText = title;
+    document.getElementById("modal-text").innerText = text;
+    document.getElementById("modal").classList.remove("hidden");
+}
+
+window.closeModal = function() {
+    document.getElementById("modal").classList.add("hidden");
+}
+
+window.setTab = function(tab) {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    event.currentTarget.classList.add("active"); // Подсветка кнопки
+
+    if(tab === 'game') {
+        document.getElementById("city-screen").classList.add("hidden");
+    } else {
+        renderBuildings();
+        document.getElementById("city-screen").classList.remove("hidden");
+    }
+}
+
+// Генерация зданий
+function renderBuildings() {
+    const list = document.getElementById("buildings-list");
+    list.innerHTML = "";
+    state.buildings.forEach(b => {
+        let div = document.createElement("div");
+        div.className = `building-card ${b.bought ? 'bought' : ''}`;
+        div.innerHTML = `
+            <div>
+                <h3>${b.name}</h3>
+                <small>Доход: ${b.income}$/час</small>
+            </div>
+            ${b.bought ? '✅' : `<button class="buy-btn" onclick="buy('${b.id}')">${b.cost}$</button>`}
+        `;
+        list.appendChild(div);
+    });
+}
+
+window.buy = function(id) {
+    let b = state.buildings.find(x => x.id === id);
+    if(state.balance >= b.cost) {
+        state.balance -= b.cost;
+        b.bought = true;
+        state.income += b.income;
         updateUI();
-        renderBuildings(); // Перерисовка списка
+        renderBuildings();
+        tg.HapticFeedback.notificationOccurred("success");
     } else {
         tg.showAlert("Не хватает денег!");
     }
 };
 
-// --- СИСТЕМА ---
-function switchTab(t, btn) {
-    document.querySelectorAll(".tab-pane").forEach(e=>e.classList.remove("active"));
-    document.querySelectorAll(".tab-item").forEach(e=>e.classList.remove("active"));
-    document.getElementById(t+"-screen").classList.add("active");
-    btn.classList.add("active");
+// --- ИНИЦИАЛИЗАЦИЯ ---
+// Настраиваем канвас под высокое разрешение (Retina)
+function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Внутреннее разрешение
+    canvas.width = 1200; 
+    canvas.height = 1200;
+    
+    // Пересчитываем координаты под новый размер
+    calcCoords();
+    draw();
 }
 
-function updateUI() {
-    document.getElementById("money").innerText = balance;
-    document.getElementById("income").innerText = passiveIncome;
-}
+initMap();
+// Ждем загрузки DOM
+setTimeout(() => {
+    resizeCanvas();
+    renderDice(6); // Показать кубик сразу
+}, 100);
 
-// Старт
-initCoords();
-drawBoard();
-renderBuildings();
+// Перерисовка при изменении размера окна
+window.onresize = () => {
+    // В CSS aspect-ratio сделает свое дело, но можно вызвать перерисовку если надо
+    // resizeCanvas(); // Обычно не нужно, если координаты в % от ширины
+};

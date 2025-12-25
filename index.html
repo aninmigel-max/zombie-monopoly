@@ -12,9 +12,9 @@
 <div class="app-container">
   <header class="main-header">
     <div class="user-stats">
-      <span class="stat-item">💰 <span id="money">1000</span></span>
+      <div class="stat-row">💰 <span id="money">2000</span>$</div>
+      <div class="stat-row small">📈 <span id="income">0</span>$/час</div>
     </div>
-    <h1 class="logo">Zombie Monopoly</h1>
     <div class="placeholder"></div>
   </header>
 
@@ -22,7 +22,9 @@
     <section id="game-screen" class="tab-pane active">
       <div class="board-area">
         <canvas id="board" width="600" height="600"></canvas>
+        
         <div class="dice-overlay">
+          <div id="msg-toast" class="toast">Твой ход!</div>
           <div id="dice" class="dice-box"></div>
           <button id="rollBtn">Бросить кубик</button>
         </div>
@@ -31,27 +33,21 @@
 
     <section id="houses-screen" class="tab-pane">
       <div class="scroll-view">
-        <h2 class="section-title">Твои владения</h2>
-        <div class="house-card">
-          <div class="house-icon">🏚</div>
-          <div class="house-details">
-            <h3>Заброшенный дом</h3>
-            <p>Уровень: <span id="h1-lvl">1</span></p>
+        <h2 class="section-title">Карта города</h2>
+        <div id="buildings-list">
           </div>
-          <button class="action-btn" onclick="upgradeHouse(1)">200$</button>
-        </div>
       </div>
     </section>
   </main>
 
   <nav class="tab-bar">
     <button class="tab-item active" onclick="switchTab('game', this)">
-      <span class="icon">🎮</span>
+      <span class="icon">🎲</span>
       <span class="label">Игра</span>
     </button>
     <button class="tab-item" onclick="switchTab('houses', this)">
-      <span class="icon">🏘</span>
-      <span class="label">Домики</span>
+      <span class="icon">🏗</span>
+      <span class="label">Город</span>
     </button>
   </nav>
 </div>

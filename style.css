@@ -72,17 +72,36 @@ canvas {
     pointer-events: none; /* Чтобы клики проходили сквозь пустоту */
 }
 
+/* КУБИК */
 .dice-box {
-    width: 70px; height: 70px;
+    width: 70px; 
+    height: 70px;
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     display: grid;
-    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    /* Сетка 3 на 3 */
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
     padding: 8px;
+    gap: 4px; /* Расстояние между точками */
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     pointer-events: auto;
 }
-.pip { background: #2f3542; border-radius: 50%; width: 80%; height: 80%; margin: auto; }
+
+.pip { 
+    background: #2f3542; 
+    border-radius: 50%; 
+    width: 85%; 
+    height: 85%; 
+    margin: auto; 
+    /* Прячем точку по умолчанию */
+    visibility: hidden; 
+}
+
+/* Класс для активной точки */
+.pip.active {
+    visibility: visible;
+}
 
 .main-btn {
     pointer-events: auto;

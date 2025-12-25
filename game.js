@@ -8,15 +8,15 @@ const toast = document.getElementById("msg-toast");
 // --- КОНФИГУРАЦИЯ ---
 let balance = 2000;
 let passiveIncome = 0; 
-let playerPos = 0; // Начинаем с угла 0 (Старт)
+let playerPos = 0; 
 
-// Цвета клеток (по твоему ТЗ)
-const C_RED = "#e53935";   // Мини-игры
-const C_BLUE = "#1e88e5";  // Доп ход
-const C_GREEN = "#43a047"; // Кейс
-const C_YELLOW = "#fdd835";// Доход
-const C_PURPLE = "#8e24aa";// ?
-const C_ORANGE = "#fb8c00";// Задания
+// НОВАЯ ПАЛИТРА (Soft / Pastel)
+const C_RED = "#ff6b6b";   // Мягкий коралловый
+const C_BLUE = "#54a0ff";  // Спокойный небесный
+const C_GREEN = "#1dd1a1"; // Мятный (не ядовитый)
+const C_YELLOW = "#feca57";// Теплый песочный
+const C_PURPLE = "#a29bfe";// Лавандовый
+const C_ORANGE = "#ff9f43";// Пастельный оранжевый// Задания
 
 // Схема периметра (40 клеток для поля 11x11)
 // 0=Start, 1-9=Left, 10=TopLeft, 11-19=Top, 20=TopRight, 21-29=Right, 30=BotRight, 31-39=Bot

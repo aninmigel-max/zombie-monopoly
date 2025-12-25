@@ -30,6 +30,23 @@ let state = {
         { id: "hotel", name: "Отель", cost: 5000, income: 800, bought: false }
     ]
 };
+const SAVE_KEY = "zombie_monopoly_save_v1";
+
+function saveGame() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+}
+
+function loadGame() {
+    const data = localStorage.getItem(SAVE_KEY);
+    if (!data) return;
+
+    try {
+        const parsed = JSON.parse(data);
+        state = parsed;
+    } catch (e) {
+        console.error("Save load error", e);
+    }
+}
 
 // --- КАРТА (40 клеток) ---
 // Генерируем карту вручную, чтобы расставить цвета
@@ -193,24 +210,37 @@ function processCell() {
     }
 
     updateUI();
+    saveGame();
 }
 
 // --- КУБИК И ДВИЖЕНИЕ ---
 const rollBtn = document.getElementById("rollBtn");
 const diceEl = document.getElementById("dice-container");
 
-// Точки на кубике
-const pips = {
-    1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]
+// Координаты точек (индексы от 0 до 8 в сетке 3х3)
+const diceLayouts = {
+    1: [4],                // Центр
+    2: [0, 8],             // Верх-лево, низ-право
+    3: [0, 4, 8],          // Диагональ
+    4: [0, 2, 6, 8],       // Четыре угла
+    5: [0, 2, 4, 6, 8],    // Углы и центр
+    6: [0, 3, 6, 2, 5, 8]  // Два вертикальных ряда
 };
 
 function renderDice(val) {
-    diceEl.innerHTML = "";
-    pips[val].forEach(i => {
+    diceEl.innerHTML = ""; // Очищаем кубик
+    
+    // Всегда создаем 9 невидимых точек
+    for (let i = 0; i < 9; i++) {
         let d = document.createElement("div");
         d.className = "pip";
+        
+        // Если индекс i есть в списке для выпавшей цифры — включаем точку
+        if (diceLayouts[val].includes(i)) {
+            d.classList.add("on");
+        }
         diceEl.appendChild(d);
-    });
+    }
 }
 
 rollBtn.onclick = () => {
@@ -248,6 +278,8 @@ rollBtn.onclick = () => {
                 state.isRolling = false;
                 rollBtn.disabled = false;
                 processCell(); // Обработка клетки
+                saveGame(); // Сохраняем прогресс
+
             }
         }, 150); // Скорость прыжка
     }, 600);
@@ -317,6 +349,7 @@ window.buy = function(id) {
         tg.HapticFeedback.notificationOccurred("success");
     } else {
         tg.showAlert("Не хватает денег!");
+        saveGame(); // Сохраняем прогресс
     }
 };
 
@@ -336,10 +369,14 @@ function resizeCanvas() {
 }
 
 initMap();
+loadGame();
+updateUI();
+renderBuildings();
+
 // Ждем загрузки DOM
 setTimeout(() => {
     resizeCanvas();
-    renderDice(6); // Показать кубик сразу
+    renderDice(1); // Показать одну точку в центре при старте
 }, 100);
 
 // Перерисовка при изменении размера окна

@@ -8,57 +8,32 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="app">
     <header class="header">
-        <div class="balance-box">
-            <span class="icon">💰</span>
-            <span id="balance">2000</span>$
-        </div>
-        <div class="income-box">
-            <span class="icon">📈</span>
-            <span id="income">0</span>$/час
-        </div>
+        <div class="stat">💰 <span id="balance">2000</span>$</div>
+        <div class="stat green">📈 <span id="income">0</span>$/час</div>
     </header>
 
     <main class="game-area">
-        <div class="board-container">
+        <div class="board-wrapper">
             <canvas id="gameCanvas"></canvas>
-            
-            <div class="center-overlay">
+            <div class="ui-overlay">
                 <div id="toast" class="toast">Твой ход!</div>
-                <div id="dice-container" class="dice-box"></div>
-                <button id="rollBtn" class="main-btn">Бросить кубик</button>
+                <div id="dice" class="dice">
+                    <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+                    <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+                    <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+                </div>
+                <button id="rollBtn" class="roll-button">Бросить кубик</button>
             </div>
         </div>
     </main>
 
-    <div id="city-screen" class="screen hidden">
-        <div class="screen-header">
-            <h2>🏗 Level up</h2>
-        </div>
-        <div id="buildings-list" class="scroll-content">
-            </div>
-    </div>
-
-    <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="setTab('game')">
-            <span>🎲</span> Monopoly
-        </button>
-        <button class="nav-btn" onclick="setTab('city')">
-            <span>🏙</span> City
-        </button>
+    <nav class="nav">
+        <button class="nav-item active" onclick="setTab('game')">🎲 Игра</button>
+        <button class="nav-item" onclick="setTab('city')">🏙 Город</button>
     </nav>
 </div>
-
-<div id="modal" class="modal hidden">
-    <div class="modal-content">
-        <h3 id="modal-title">Заголовок</h3>
-        <p id="modal-text">Текст</p>
-        <button onclick="closeModal()">ОК</button>
-    </div>
-</div>
-
 <script src="game.js"></script>
 </body>
 </html>

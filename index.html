@@ -1,55 +1,62 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Zombie Monopoly</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zombie Monopoly</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="app-container">
-  <header class="main-header">
-    <div class="user-stats">
-      <div class="stat-row">💰 <span id="money">2000</span>$</div>
-      <div class="stat-row small">📈 <span id="income">0</span>$/час</div>
-    </div>
-    <div class="placeholder"></div>
-  </header>
-
-  <main class="content">
-    <section id="game-screen" class="tab-pane active">
-      <div class="board-area">
-        <canvas id="board" width="600" height="600"></canvas>
-        
-        <div class="dice-overlay">
-          <div id="msg-toast" class="toast">Твой ход!</div>
-          <div id="dice" class="dice-box"></div>
-          <button id="rollBtn">Бросить кубик</button>
+<div class="app">
+    <header class="header">
+        <div class="balance-box">
+            <span class="icon">💰</span>
+            <span id="balance">2000</span>$
         </div>
-      </div>
-    </section>
+        <div class="income-box">
+            <span class="icon">📈</span>
+            <span id="income">0</span>$/час
+        </div>
+    </header>
 
-    <section id="houses-screen" class="tab-pane">
-      <div class="scroll-view">
-        <h2 class="section-title">Карта города</h2>
-        <div id="buildings-list">
-          </div>
-      </div>
-    </section>
-  </main>
+    <main class="game-area">
+        <div class="board-container">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="center-overlay">
+                <div id="toast" class="toast">Твой ход!</div>
+                <div id="dice-container" class="dice-box"></div>
+                <button id="rollBtn" class="main-btn">Бросить кубик</button>
+            </div>
+        </div>
+    </main>
 
-  <nav class="tab-bar">
-    <button class="tab-item active" onclick="switchTab('game', this)">
-      <span class="icon">🎲</span>
-      <span class="label">Игра</span>
-    </button>
-    <button class="tab-item" onclick="switchTab('houses', this)">
-      <span class="icon">🏗</span>
-      <span class="label">Город</span>
-    </button>
-  </nav>
+    <div id="city-screen" class="screen hidden">
+        <div class="screen-header">
+            <h2>🏗 Твой Город</h2>
+        </div>
+        <div id="buildings-list" class="scroll-content">
+            </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" onclick="setTab('game')">
+            <span>🎲</span> Игра
+        </button>
+        <button class="nav-btn" onclick="setTab('city')">
+            <span>🏙</span> Город
+        </button>
+    </nav>
+</div>
+
+<div id="modal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="modal-title">Заголовок</h3>
+        <p id="modal-text">Текст</p>
+        <button onclick="closeModal()">ОК</button>
+    </div>
 </div>
 
 <script src="game.js"></script>

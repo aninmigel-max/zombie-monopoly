@@ -196,27 +196,35 @@ function processCell() {
 }
 
 // --- КУБИК И ДВИЖЕНИЕ ---
-const rollBtn = document.getElementById("rollBtn");
-const diceEl = document.getElementById("dice-container");
+// Индексы точек в сетке 3x3:
+// 0 1 2
+// 3 4 5
+// 6 7 8
 
-// Точки на кубике
-const pips = {
-    1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]
+const pipsLayout = {
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 3, 6, 2, 5, 8] // Две вертикальные линии
 };
 
 function renderDice(val) {
     diceEl.innerHTML = "";
-    pips[val].forEach(i => {
-        let d = document.createElement("div");
-        d.className = "pip";
-        diceEl.appendChild(d);
-    });
+    // Всегда создаем 9 невидимых точек
+    for (let i = 0; i < 9; i++) {
+        let pip = document.createElement("div");
+        pip.className = "pip";
+        
+        // Если индекс i входит в схему для выпавшего числа — включаем точку
+        if (pipsLayout[val].includes(i)) {
+            pip.classList.add("active");
+        }
+        
+        diceEl.appendChild(pip);
+    }
 }
-
-rollBtn.onclick = () => {
-    if(state.isRolling) return;
-    state.isRolling = true;
-    rollBtn.disabled = true;
 
     // Анимация
     diceEl.classList.add("roll-anim");

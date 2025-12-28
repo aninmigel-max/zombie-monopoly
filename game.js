@@ -11,7 +11,6 @@ const COLORS = {
     BLUE: "#74b9ff",    // Доп ход
     GREEN: "#55efc4",   // Кейс
     YELLOW: "#ffeaa7",  // Доход
-    ORANGE: "#fab1a0",  // Задания
     PURPLE: "#a29bfe",  // ? (Вопрос)
     CORNER: "#ffffff",  // Углы
     TEXT: "#2d3436"
@@ -53,34 +52,48 @@ function loadGame() {
 const SIZE = 11;
 const boardMap = [];
 
+function pushSide(colors) {
+    colors.forEach((c, i) => {
+        boardMap.push({
+            type: i % 2 === 0 ? "CELL_COLOR" : "CELL_EMPTY",
+            color: i % 2 === 0 ? c : null
+        });
+    });
+}
+
 function initMap() {
     // 0: Start (Низ-Лево)
     boardMap.push({ type: "START", color: COLORS.CORNER, text: "Start" });
     
     // 1-9: Левая сторона (вверх)
     const leftColors = [COLORS.RED, COLORS.PURPLE, COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.BLUE, COLORS.ORANGE, COLORS.RED, COLORS.GREEN];
-    leftColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+    leftColors.forEach((c, i) => {
+    boardMap.push({
+        type: i % 2 === 0 ? "CELL_COLOR" : "CELL_EMPTY",
+        color: i % 2 === 0 ? c : null
+    });
+});
 
     // 10: Infection (Верх-Лево)
     boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Infection" });
 
     // 11-19: Верхняя сторона (вправо)
     const topColors = [COLORS.RED, COLORS.ORANGE, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED, COLORS.BLUE, COLORS.ORANGE];
-    topColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+    pushSide(topColors);
 
     // 20: Choice (Верх-Право)
     boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Choice" });
 
     // 21-29: Правая сторона (вниз)
     const rightColors = [COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.PURPLE, COLORS.BLUE, COLORS.RED, COLORS.ORANGE, COLORS.GREEN, COLORS.YELLOW];
-    rightColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+   pushSide(rightColors);
 
     // 30: Attack (Низ-Право)
     boardMap.push({ type: "ATTACK", color: COLORS.CORNER, text: "Attack" });
 
     // 31-39: Нижняя сторона (влево)
     const botColors = [COLORS.RED, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.ORANGE, COLORS.RED, COLORS.BLUE, COLORS.PURPLE];
-    botColors.forEach(c => boardMap.push({ type: "CELL", color: c }));
+    pushSide(botColors);
 }
 
 // Вычисляем координаты для отрисовки
@@ -140,24 +153,22 @@ function draw() {
                 ctx.font = "bold 18px Arial";
                 ctx.fillText("-100$", c.x + c.w/2, c.y + c.w/2 + 25);
             }
-        } else {
-            // ЦВЕТНЫЕ КРУГИ (как на картинке 3)
-            ctx.beginPath();
-            let r = c.w * 0.35; // Радиус круга
-            ctx.arc(c.x + c.w/2, c.y + c.w/2, r, 0, Math.PI*2);
-            ctx.fillStyle = cell.color;
-            ctx.fill();
-            
-            // Если это "?" (Фиолетовый)
-            if(cell.color === COLORS.PURPLE) {
-                ctx.fillStyle = "#fff";
-                ctx.font = "bold 30px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText("?", c.x + c.w/2, c.y + c.w/2);
-            }
-        }
-    });
+        }  else if (cell.type === "CELL_COLOR") {
+    // ЦВЕТНЫЕ КРУГИ
+    ctx.beginPath();
+    let r = c.w * 0.35;
+    ctx.arc(c.x + c.w/2, c.y + c.w/2, r, 0, Math.PI*2);
+    ctx.fillStyle = cell.color;
+    ctx.fill();
+
+    if(cell.color === COLORS.PURPLE) {
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 30px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("?", c.x + c.w/2, c.y + c.w/2);
+    }
+}});
 
     // РИСУЕМ ИГРОКА
     const p = cellCoords[state.pos];
@@ -184,7 +195,7 @@ function processCell() {
         showToast("🏁 Круг пройден!");
     }
     else if (color === COLORS.RED) {
-        showModal("🎮 Мини-игра", "Тут будет запущена мини-игра на реакцию!");
+         openMinigameMenu();
     }
     else if (color === COLORS.BLUE) {
         showToast("🔵 Дополнительный ход!");
@@ -346,10 +357,13 @@ window.buy = function(id) {
         state.income += b.income;
         updateUI();
         renderBuildings();
+        saveGame();
         tg.HapticFeedback.notificationOccurred("success");
+
+        
     } else {
         tg.showAlert("Не хватает денег!");
-        saveGame(); // Сохраняем прогресс
+         // Сохраняем прогресс
     }
 };
 
@@ -367,6 +381,38 @@ function resizeCanvas() {
     calcCoords();
     draw();
 }
+const MINIGAMES = [
+  { name: "🧠 Запомни порядок", start: startMemoryGame },
+  { name: "➕ Математика", start: () => alert("Будет позже") },
+  { name: "❓ Найди лишнее", start: () => alert("Будет позже") },
+  { name: "🧩 Лабиринт", start: () => alert("Будет позже") },
+  { name: "🎯 Mini OSU", start: () => alert("Будет позже") },
+  { name: "🧩 Пазл", start: () => alert("Будет позже") },
+  { name: "🧠 Мемори", start: () => alert("Будет позже") },
+  { name: "🎨 Соедини цвета", start: () => alert("Будет позже") }
+];
+
+function openMinigameMenu() {
+  const list = document.getElementById("minigame-list");
+  list.innerHTML = "";
+
+  MINIGAMES.forEach(g => {
+    const btn = document.createElement("button");
+    btn.className = "minigame-btn";
+    btn.innerText = g.name;
+    btn.onclick = () => {
+      closeMinigameMenu();
+      g.start();
+    };
+    list.appendChild(btn);
+  });
+
+  document.getElementById("minigame-menu").classList.remove("hidden");
+}
+
+function closeMinigameMenu() {
+  document.getElementById("minigame-menu").classList.add("hidden");
+}
 
 initMap();
 loadGame();
@@ -379,8 +425,104 @@ setTimeout(() => {
     renderDice(1); // Показать одну точку в центре при старте
 }, 100);
 
+// 🔁 Автосохранение каждые 10 секунд
+setInterval(() => {
+    if (!state.isRolling) {
+        saveGame();
+    }
+}, 10000);
+
 // Перерисовка при изменении размера окна
 window.onresize = () => {
     // В CSS aspect-ratio сделает свое дело, но можно вызвать перерисовку если надо
     // resizeCanvas(); // Обычно не нужно, если координаты в % от ширины
 };
+// =====================
+// MEMORY GAME (5x5)
+// =====================
+
+let memoryLevel = 1;
+let memorySequence = [];
+let memoryInput = [];
+let memoryLocked = true;
+
+function startMemoryGame() {
+    document.getElementById("memory-game").classList.remove("hidden");
+    memoryLevel = 1;
+    nextMemoryLevel();
+}
+
+function nextMemoryLevel() {
+    memorySequence = [];
+    memoryInput = [];
+    memoryLocked = true;
+
+    document.getElementById("memory-level").innerText = `Уровень ${memoryLevel}`;
+    document.getElementById("memory-status").innerText = "";
+
+    const grid = document.getElementById("memory-grid");
+    grid.innerHTML = "";
+
+    for (let i = 0; i < 25; i++) {
+        const cell = document.createElement("div");
+        cell.className = "memory-cell";
+        cell.onclick = () => onMemoryClick(i, cell);
+        grid.appendChild(cell);
+    }
+
+    for (let i = 0; i < memoryLevel; i++) {
+        memorySequence.push(Math.floor(Math.random() * 25));
+    }
+
+    showMemorySequence();
+}
+
+function showMemorySequence() {
+    const cells = document.querySelectorAll(".memory-cell");
+    let i = 0;
+
+    const interval = setInterval(() => {
+        if (i > 0) cells[memorySequence[i - 1]].classList.remove("active");
+
+        if (i === memorySequence.length) {
+            clearInterval(interval);
+            memoryLocked = false;
+            return;
+        }
+
+        cells[memorySequence[i]].classList.add("active");
+        i++;
+    }, 600);
+}
+
+function onMemoryClick(index, cell) {
+    if (memoryLocked) return;
+
+    const expected = memorySequence[memoryInput.length];
+    memoryInput.push(index);
+
+    if (index === expected) {
+        cell.classList.add("correct");
+
+        if (memoryInput.length === memorySequence.length) {
+            memoryLevel++;
+            setTimeout(nextMemoryLevel, 800);
+        }
+    } else {
+        cell.classList.add("wrong");
+        document.getElementById("memory-status").innerText = "❌ Ошибка";
+        memoryLocked = true;
+    }
+}
+
+function exitMemoryGame() {
+    document.getElementById("memory-game").classList.add("hidden");
+}
+function openMemoryGame() {
+    document.getElementById("memoryOverlay").classList.remove("hidden");
+    startMemory();
+}
+
+function closeMemory() {
+    document.getElementById("memoryOverlay").classList.add("hidden");
+}

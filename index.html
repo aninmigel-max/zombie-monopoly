@@ -62,6 +62,33 @@
         <button onclick="closeModal()">ОК</button>
     </div>
 </div>
+<!-- МЕНЮ МИНИ-ИГР -->
+<div id="minigame-menu" class="modal hidden">
+  <div class="modal-content">
+    <h3>🎮 Мини-игры</h3>
+    <div id="minigame-list"></div>
+    <button onclick="closeMinigameMenu()">Закрыть</button>
+  </div>
+</div>
+
+<!-- MEMORY GAME -->
+<div id="memory-game" class="modal hidden">
+  <div class="modal-content">
+    <h3 id="memory-level">Уровень 1</h3>
+    <div id="memory-grid" class="memory-grid"></div>
+    <p id="memory-status"></p>
+    <button onclick="exitMemoryGame()">Выйти</button>
+  </div>
+</div>
+<!-- MEMORY GAME -->
+<div id="memoryOverlay" class="hidden">
+    <div class="memoryBox">
+        <h3 id="memoryLevel">Уровень 1</h3>
+        <div id="memoryGrid"></div>
+        <p id="memoryStatus"></p>
+        <button onclick="closeMemory()">Выйти</button>
+    </div>
+</div>
 
 <script src="game.js"></script>
 </body>

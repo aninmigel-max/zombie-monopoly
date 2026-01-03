@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -25,7 +24,7 @@
     <main class="game-area">
         <div class="board-container">
             <canvas id="gameCanvas"></canvas>
-            
+
             <div class="center-overlay">
                 <div id="toast" class="toast">Твой ход!</div>
                 <div id="dice-container" class="dice-box"></div>
@@ -36,13 +35,10 @@
 
     <div id="city-screen" class="screen hidden">
         <div class="screen-header">
-         <button class="back-btn" onclick="setTab('game')" style="background:none; border:none; color:white; font-size:30px; line-height:1; cursor:pointer;">
-    &#8592;
-</button>
-            <h2>🏗 Твой Город</h2>  
+            <button class="back-btn" onclick="setTab('game')" style="background:none; border:none; color:white; font-size:30px; line-height:1; cursor:pointer;">&#8592;</button>
+            <h2>🏗 Твой Город</h2>
         </div>
-        <div id="buildings-list" class="scroll-content">
-            </div>
+        <div id="buildings-list" class="scroll-content"></div>
     </div>
 
     <nav class="bottom-nav">
@@ -62,6 +58,7 @@
         <button onclick="closeModal()">ОК</button>
     </div>
 </div>
+
 <!-- МЕНЮ МИНИ-ИГР -->
 <div id="minigame-menu" class="modal hidden">
   <div class="modal-content">
@@ -81,6 +78,28 @@
   </div>
 </div>
 
+<!-- MATH GAME -->
+<div id="math-game" class="modal hidden">
+  <div class="modal-content math-modal">
+
+    <!-- Полоска прямо сверху -->
+    <div class="math-timer-top">
+      <div id="math-timer-bar" class="math-timer-bar"></div>
+    </div>
+
+    <div class="math-top">
+      <div id="math-level">Уровень 1 / 5</div>
+    </div>
+
+    <div id="math-question" class="math-question">2 + 2 = ?</div>
+
+    <div id="math-answers" class="math-answers"></div>
+
+    <p id="math-status" class="math-status"></p>
+
+    <button onclick="exitMathGame()">Выйти</button>
+  </div>
+</div>
 
 <script src="game.js"></script>
 </body>

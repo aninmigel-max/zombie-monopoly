@@ -223,19 +223,20 @@ canvas {
 
 .memory-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin: 15px 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 15px auto;
+
+  width: 260px;
+  height: 260px;
 }
 
 .memory-cell {
-  background: #b2bec3;
-  border-radius: 6px;
-  height: 50px;
+  background: #babcbd;
 }
 
 .memory-cell.active {
-  background: #fdcb6e;
+  background: #ffa502;
 }
 
 .memory-cell.correct {
@@ -280,4 +281,91 @@ canvas {
 #memoryGrid div {
     background: #2f3542;
     border-radius: 8px;
+}
+
+/* ===== MATH GAME ===== */
+.math-modal { max-width: 420px; }
+
+.math-top{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  margin: 10px 0 14px;
+  font-weight: 700;
+}
+
+.math-timer{
+  min-width: 70px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.25);
+}
+
+.math-question{
+  font-size: 28px;
+  font-weight: 800;
+  margin: 10px 0 16px;
+}
+
+.math-answers{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.math-ans-btn{
+  padding: 12px 10px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 800;
+  font-size: 18px;
+  cursor: pointer;
+  background: #6c5ce7;
+  color: white;
+}
+
+.math-ans-btn:active { transform: scale(0.98); }
+
+.math-ans-btn.correct { background: #2ed573; }
+.math-ans-btn.wrong { background: #ff4757; }
+
+.math-status{
+  margin-top: 12px;
+  min-height: 20px;
+  font-weight: 700;
+}
+.math-timer-wrap{
+  width: 160px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+}
+
+.math-timer-bar{
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: #2ed573;
+  transition: width 0.1s linear;
+}
+.math-modal { 
+  position: relative; 
+  overflow: hidden;
+}
+
+.math-timer-top{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+}
+
+.math-timer-bar{
+  height: 100%;
+  width: 100%;
+  background: #2ed573;
+  transition: width 0.05s linear;
 }

@@ -66,7 +66,12 @@ function initMap() {
     boardMap.push({ type: "START", color: COLORS.CORNER, text: "Start" });
     
     // 1-9: Левая сторона (вверх)
-    const leftColors = [COLORS.RED, COLORS.PURPLE, COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.BLUE, COLORS.ORANGE, COLORS.RED, COLORS.GREEN];
+  const leftColors = [
+  COLORS.RED, COLORS.PURPLE, COLORS.GREEN,
+  COLORS.YELLOW, COLORS.BLUE,
+  COLORS.PURPLE, COLORS.RED,
+  COLORS.GREEN, COLORS.YELLOW
+];
     leftColors.forEach((c, i) => {
     boardMap.push({
         type: i % 2 === 0 ? "CELL_COLOR" : "CELL_EMPTY",
@@ -78,21 +83,41 @@ function initMap() {
     boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Infection" });
 
     // 11-19: Верхняя сторона (вправо)
-    const topColors = [COLORS.RED, COLORS.ORANGE, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED, COLORS.BLUE, COLORS.ORANGE];
-    pushSide(topColors);
+  const topColors = [
+  COLORS.RED,     // 0 ✅
+  COLORS.GREEN,   // 1 ❌
+  COLORS.BLUE,    // 2 ✅
+  COLORS.PURPLE,  // 3 ❌
+  COLORS.RED,     // 4 ✅
+  COLORS.YELLOW,  // 5 ❌
+  COLORS.GREEN,   // 6 ✅
+  COLORS.BLUE,    // 7 ❌
+  COLORS.PURPLE   // 8 ✅
+];
+pushSide(topColors);
 
     // 20: Choice (Верх-Право)
     boardMap.push({ type: "CORNER", color: COLORS.CORNER, text: "Choice" });
 
     // 21-29: Правая сторона (вниз)
-    const rightColors = [COLORS.GREEN, COLORS.RED, COLORS.YELLOW, COLORS.PURPLE, COLORS.BLUE, COLORS.RED, COLORS.ORANGE, COLORS.GREEN, COLORS.YELLOW];
+   const rightColors = [
+  COLORS.YELLOW, COLORS.GREEN, COLORS.PURPLE,
+  COLORS.BLUE, COLORS.RED,
+  COLORS.YELLOW, COLORS.GREEN,
+  COLORS.PURPLE, COLORS.RED
+];
    pushSide(rightColors);
 
     // 30: Attack (Низ-Право)
     boardMap.push({ type: "ATTACK", color: COLORS.CORNER, text: "Attack" });
 
     // 31-39: Нижняя сторона (влево)
-    const botColors = [COLORS.RED, COLORS.BLUE, COLORS.PURPLE, COLORS.YELLOW, COLORS.GREEN, COLORS.ORANGE, COLORS.RED, COLORS.BLUE, COLORS.PURPLE];
+    const botColors = [
+  COLORS.PURPLE, COLORS.BLUE, COLORS.GREEN,
+  COLORS.YELLOW, COLORS.RED,
+  COLORS.PURPLE, COLORS.BLUE,
+  COLORS.GREEN, COLORS.RED
+];
     pushSide(botColors);
 }
 
@@ -383,7 +408,7 @@ function resizeCanvas() {
 }
 const MINIGAMES = [
   { name: "🧠 Запомни порядок", start: startMemoryGame },
-  { name: "➕ Математика", start: () => alert("Будет позже") },
+  { name: "➕ Математика", start: startMathGame },
   { name: "❓ Найди лишнее", start: () => alert("Будет позже") },
   { name: "🧩 Лабиринт", start: () => alert("Будет позже") },
   { name: "🎯 Mini OSU", start: () => alert("Будет позже") },
@@ -441,88 +466,341 @@ window.onresize = () => {
 // MEMORY GAME (5x5)
 // =====================
 
+// =====================
+// MEMORY GAME (4x4, накопление, 5 уровней)
+// =====================
+
+const MEMORY_SIZE = 4;
+const MEMORY_CELLS = MEMORY_SIZE * MEMORY_SIZE; // 16
+const MEMORY_MAX_LEVEL = 5;
+
 let memoryLevel = 1;
 let memorySequence = [];
 let memoryInput = [];
 let memoryLocked = true;
 
 function startMemoryGame() {
-    document.getElementById("memory-game").classList.remove("hidden");
-    memoryLevel = 1;
-    nextMemoryLevel();
+  document.getElementById("memory-game").classList.remove("hidden");
+  memoryLevel = 1;
+  memorySequence = [];   // очищаем только при старте всей мини-игры
+  nextMemoryLevel();
 }
 
 function nextMemoryLevel() {
-    memorySequence = [];
-    memoryInput = [];
-    memoryLocked = true;
+  memoryInput = [];
+  memoryLocked = true;
 
-    document.getElementById("memory-level").innerText = `Уровень ${memoryLevel}`;
-    document.getElementById("memory-status").innerText = "";
+  document.getElementById("memory-level").innerText =
+    `Уровень ${memoryLevel} / ${MEMORY_MAX_LEVEL}`;
+  document.getElementById("memory-status").innerText = "";
 
-    const grid = document.getElementById("memory-grid");
-    grid.innerHTML = "";
+  const grid = document.getElementById("memory-grid");
+  grid.innerHTML = "";
 
-    for (let i = 0; i < 25; i++) {
-        const cell = document.createElement("div");
-        cell.className = "memory-cell";
-        cell.onclick = () => onMemoryClick(i, cell);
-        grid.appendChild(cell);
-    }
+  // создаём 16 клеток (4x4)
+  for (let i = 0; i < MEMORY_CELLS; i++) {
+    const cell = document.createElement("div");
+    cell.className = "memory-cell";
+    cell.onclick = () => onMemoryClick(i, cell);
+    grid.appendChild(cell);
+  }
 
-    for (let i = 0; i < memoryLevel; i++) {
-        memorySequence.push(Math.floor(Math.random() * 25));
-    }
+  // добавляем 1 новую клетку к уже существующей последовательности
+  let next;
+  do {
+    next = Math.floor(Math.random() * MEMORY_CELLS);
+  } while (memorySequence.includes(next)); // без повторов (можно убрать, если хочешь повторы)
 
-    showMemorySequence();
+  memorySequence.push(next);
+
+  showMemorySequence();
 }
 
 function showMemorySequence() {
-    const cells = document.querySelectorAll(".memory-cell");
-    let i = 0;
+  const cells = document.querySelectorAll("#memory-grid .memory-cell");
+  let i = 0;
 
-    const interval = setInterval(() => {
-        if (i > 0) cells[memorySequence[i - 1]].classList.remove("active");
+  const interval = setInterval(() => {
+    // выключаем предыдущую подсветку
+    if (i > 0) cells[memorySequence[i - 1]].classList.remove("active");
 
-        if (i === memorySequence.length) {
-            clearInterval(interval);
-            memoryLocked = false;
-            return;
-        }
+    // закончили показ
+    if (i === memorySequence.length) {
+      clearInterval(interval);
+      memoryLocked = false;
+      return;
+    }
 
-        cells[memorySequence[i]].classList.add("active");
-        i++;
-    }, 600);
+    // подсветить текущую
+    cells[memorySequence[i]].classList.add("active");
+    i++;
+  }, 600);
 }
 
 function onMemoryClick(index, cell) {
-    if (memoryLocked) return;
+  if (memoryLocked) return;
 
-    const expected = memorySequence[memoryInput.length];
-    memoryInput.push(index);
+  const expected = memorySequence[memoryInput.length];
+  memoryInput.push(index);
 
-    if (index === expected) {
-        cell.classList.add("correct");
+  if (index === expected) {
+    cell.classList.add("correct");
 
-        if (memoryInput.length === memorySequence.length) {
-            memoryLevel++;
-            setTimeout(nextMemoryLevel, 800);
-        }
-    } else {
-        cell.classList.add("wrong");
-        document.getElementById("memory-status").innerText = "❌ Ошибка";
+    // если ввёл всю последовательность верно
+    if (memoryInput.length === memorySequence.length) {
+      if (memoryLevel >= MEMORY_MAX_LEVEL) {
+        document.getElementById("memory-status").innerText = "🏆 Победа!";
         memoryLocked = true;
+
+        // (по желанию) награда:
+        // state.balance += 300; updateUI(); saveGame();
+
+        setTimeout(exitMemoryGame, 800);
+        return;
+      }
+
+      memoryLevel++;
+      setTimeout(nextMemoryLevel, 700);
     }
+  } else {
+    cell.classList.add("wrong");
+    document.getElementById("memory-status").innerText = "❌ Ошибка";
+    memoryLocked = true;
+  }
 }
 
 function exitMemoryGame() {
-    document.getElementById("memory-game").classList.add("hidden");
-}
-function openMemoryGame() {
-    document.getElementById("memoryOverlay").classList.remove("hidden");
-    startMemory();
+  document.getElementById("memory-game").classList.add("hidden");
 }
 
 function closeMemory() {
     document.getElementById("memoryOverlay").classList.add("hidden");
+}
+// =====================
+// MATH RUSH (5 уровней, 7 секунд)
+// =====================
+
+const MATH_MAX_LEVEL = 5;
+const MATH_TIME_LIMIT = 5.0; // сек
+
+let mathLevel = 1;
+let mathCorrectAnswer = null;
+let mathLocked = false;
+let mathTimer = MATH_TIME_LIMIT;
+let mathTimerInt = null;
+
+// Запуск
+function startMathGame() {
+  document.getElementById("math-game").classList.remove("hidden");
+  mathLevel = 1;
+  nextMathLevel();
+}
+
+// Следующий уровень
+function nextMathLevel() {
+  mathLocked = false;
+  document.getElementById("math-status").innerText = "";
+  document.getElementById("math-level").innerText = `Уровень ${mathLevel} / ${MATH_MAX_LEVEL}`;
+
+  const q = generateMathQuestion(mathLevel);
+  mathCorrectAnswer = q.answer;
+
+  document.getElementById("math-question").innerText = q.text;
+
+  renderMathAnswers(q.options, q.answer);
+
+  startMathTimer();
+}
+
+// Таймер
+function updateMathTimerUI() {
+  const bar = document.getElementById("math-timer-bar");
+  if (!bar) return;
+
+  const pct = Math.max(0, Math.min(1, mathTimer / MATH_TIME_LIMIT));
+  bar.style.width = (pct * 100) + "%";
+  if (pct > 0.5) bar.style.background = "#2ed573";
+  else if (pct > 0.25) bar.style.background = "#ffa502";
+  else bar.style.background = "#ff4757";
+}
+
+
+function stopMathTimer() {
+  if (mathTimerInt) {
+    clearInterval(mathTimerInt);
+    mathTimerInt = null;
+  }
+}
+function startMathTimer() {
+  stopMathTimer();
+  mathTimer = MATH_TIME_LIMIT;
+  updateMathTimerUI();
+
+  mathTimerInt = setInterval(() => {
+    if (mathLocked) { stopMathTimer(); return; }
+
+    mathTimer -= 0.05; // шаг 50ms
+    if (mathTimer <= 0) {
+      mathTimer = 0;
+      updateMathTimerUI();
+      stopMathTimer();
+      onMathTimeout();
+      return;
+    }
+    updateMathTimerUI();
+  }, 50);
+}
+function onMathTimeout() {
+  if (mathLocked) return;
+  mathLocked = true;
+
+  document.getElementById("math-status").innerText = "⏳ Время вышло!";
+  // можно штраф:
+  // state.balance -= 50; updateUI(); saveGame();
+
+  // подсветим правильный
+  highlightMathCorrect();
+
+  setTimeout(() => {
+    // проигрыш — остаёмся/выходим (как хочешь)
+    exitMathGame();
+  }, 900);
+}
+
+// Отрисовка вариантов
+function renderMathAnswers(options, correct) {
+  const box = document.getElementById("math-answers");
+  box.innerHTML = "";
+
+  options.forEach(val => {
+    const btn = document.createElement("button");
+    btn.className = "math-ans-btn";
+    btn.innerText = val;
+    btn.onclick = () => onMathPick(val, btn);
+    box.appendChild(btn);
+  });
+}
+
+function onMathPick(val, btn) {
+  if (mathLocked) return;
+  mathLocked = true;
+  stopMathTimer();
+
+  const buttons = document.querySelectorAll("#math-answers .math-ans-btn");
+
+  if (val === mathCorrectAnswer) {
+    btn.classList.add("correct");
+    document.getElementById("math-status").innerText = "✅ Правильно!";
+
+    // награда за уровень (можно настроить)
+    // state.balance += 50 * mathLevel; updateUI(); saveGame();
+
+    setTimeout(() => {
+      if (mathLevel >= MATH_MAX_LEVEL) {
+        document.getElementById("math-status").innerText = "🏆 Победа! 5/5";
+
+        // финальная награда (по желанию)
+        // state.balance += 300; updateUI(); saveGame();
+
+        setTimeout(exitMathGame, 700);
+        return;
+      }
+
+      mathLevel++;
+      nextMathLevel();
+    }, 600);
+
+  } else {
+    btn.classList.add("wrong");
+    document.getElementById("math-status").innerText = "❌ Неправильно!";
+
+    highlightMathCorrect();
+
+    // штраф (по желанию)
+    // state.balance -= 100; updateUI(); saveGame();
+
+    setTimeout(() => exitMathGame(), 900);
+  }
+}
+
+function highlightMathCorrect() {
+  const buttons = document.querySelectorAll("#math-answers .math-ans-btn");
+  buttons.forEach(b => {
+    if (Number(b.innerText) === mathCorrectAnswer) b.classList.add("correct");
+  });
+}
+
+// Выход
+function exitMathGame() {
+  stopMathTimer();
+  document.getElementById("math-game").classList.add("hidden");
+}
+
+// Генератор вопросов
+function generateMathQuestion(level) {
+  // сложность растёт от уровня
+  // 1: маленькие числа, 5: побольше
+  const max = [10, 20, 50, 100, 200][Math.min(level - 1, 4)];
+
+  const ops = ["+", "-", "×", "÷"];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+
+  let a, b, answer, text;
+
+  if (op === "+") {
+    a = rand(1, max);
+    b = rand(1, max);
+    answer = a + b;
+    text = `${a} + ${b} = ?`;
+  }
+
+  if (op === "-") {
+    a = rand(1, max);
+    b = rand(1, max);
+    // сделаем так, чтобы не было отрицательных на маленьких уровнях
+    if (b > a) [a, b] = [b, a];
+    answer = a - b;
+    text = `${a} - ${b} = ?`;
+  }
+
+  if (op === "×") {
+    const mmax = [6, 8, 10, 12, 15][Math.min(level - 1, 4)];
+    a = rand(2, mmax);
+    b = rand(2, mmax);
+    answer = a * b;
+    text = `${a} × ${b} = ?`;
+  }
+
+  if (op === "÷") {
+    // деление делаем “красивым”, всегда целое
+    const dmax = [6, 8, 10, 12, 15][Math.min(level - 1, 4)];
+    b = rand(2, dmax);
+    answer = rand(2, dmax);
+    a = b * answer;
+    text = `${a} ÷ ${b} = ?`;
+  }
+
+  const options = makeOptions(answer, level);
+
+  return { text, answer, options };
+}
+
+function makeOptions(answer, level) {
+  const set = new Set();
+  set.add(answer);
+
+  // разброс “ложных” ответов зависит от уровня
+  const spread = [3, 6, 10, 15, 25][Math.min(level - 1, 4)];
+
+  while (set.size < 4) {
+    const wrong = answer + rand(-spread, spread);
+    if (wrong !== answer && wrong >= 0) set.add(wrong);
+  }
+
+  // перемешиваем
+  return Array.from(set).sort(() => Math.random() - 0.5);
+}
+
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }

@@ -1,5 +1,23 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
+// ===== ODD GAME BANK =====
+let ODD_BANK = [];
+
+async function loadOddBank() {
+  try {
+    const res = await fetch("odd_bank.json");
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      ODD_BANK = data;
+      console.log("✅ odd_bank загружен:", ODD_BANK.length);
+    } else {
+      console.error("❌ odd_bank не массив");
+    }
+  } catch (e) {
+    console.error("❌ Ошибка загрузки odd_bank.json", e);
+  }
+}
 
 // --- НАСТРОЙКИ ---
 const canvas = document.getElementById("gameCanvas");
@@ -409,7 +427,7 @@ function resizeCanvas() {
 const MINIGAMES = [
   { name: "🧠 Запомни порядок", start: startMemoryGame },
   { name: "➕ Математика", start: startMathGame },
-  { name: "❓ Найди лишнее", start: () => alert("Будет позже") },
+  { name: "❓ Найди лишнее", start: startOddGame },
   { name: "🧩 Лабиринт", start: () => alert("Будет позже") },
   { name: "🎯 Mini OSU", start: () => alert("Будет позже") },
   { name: "🧩 Пазл", start: () => alert("Будет позже") },
@@ -441,6 +459,7 @@ function closeMinigameMenu() {
 
 initMap();
 loadGame();
+loadOddBank(); 
 updateUI();
 renderBuildings();
 
@@ -594,6 +613,122 @@ function startMathGame() {
   document.getElementById("math-game").classList.remove("hidden");
   mathLevel = 1;
   nextMathLevel();
+}
+// =====================
+// ODD ONE OUT GAME
+// =====================
+
+// =====================
+// ODD ONE OUT GAME (UI + TIMER)
+// =====================
+let oddLevel = 1;
+const ODD_MAX_LEVEL = 5;
+let oddCorrect = "";
+let oddTimer = null;
+
+function startOddGame() {
+  if (!ODD_BANK.length) {
+    alert("Банк слов не загружен");
+    return;
+  }
+
+  document.getElementById("odd-game").classList.remove("hidden");
+  oddLevel = 1;
+  nextOddLevel();
+}
+
+function nextOddLevel() {
+  document.getElementById("odd-status").innerText = "";
+  document.getElementById("odd-level").innerText =
+    `Уровень ${oddLevel} / ${ODD_MAX_LEVEL}`;
+
+  const round = generateOddRound();
+  oddCorrect = round.correct;
+
+  const box = document.getElementById("odd-answers");
+  box.innerHTML = "";
+
+  round.options.forEach(word => {
+    const btn = document.createElement("button");
+    btn.className = "odd-btn";
+    btn.innerText = word;
+    btn.onclick = () => pickOdd(word, btn);
+    box.appendChild(btn);
+  });
+
+  startOddTimer();
+}
+
+function generateOddRound() {
+  const a = rand(0, ODD_BANK.length - 1);
+  let b;
+  do {
+    b = rand(0, ODD_BANK.length - 1);
+  } while (b === a);
+
+  const main = shuffle([...ODD_BANK[a].words]).slice(0, 4);
+  const odd = shuffle([...ODD_BANK[b].words])[0];
+
+  return {
+    options: shuffle([...main, odd]),
+    correct: odd
+  };
+}
+
+function pickOdd(word, btn) {
+  clearTimeout(oddTimer);
+
+  if (word === oddCorrect) {
+    btn.classList.add("correct");
+    document.getElementById("odd-status").innerText = "✅ Верно";
+
+    setTimeout(() => {
+      if (oddLevel >= ODD_MAX_LEVEL) {
+        exitOddGame();
+      } else {
+        oddLevel++;
+        nextOddLevel();
+      }
+    }, 600);
+  } else {
+  btn.classList.add("wrong");
+  document.getElementById("odd-status").innerText = "❌ Неверно";
+
+  setTimeout(() => {
+    exitOddGame(); // ⬅️ ВОТ ЭТОГО НЕ ХВАТАЛО
+  }, 600);
+  }
+} 
+
+function startOddTimer() {
+  clearTimeout(oddTimer);
+  const bar = document.getElementById("odd-timer-bar");
+
+  bar.style.transition = "none";
+  bar.style.width = "100%";
+
+  setTimeout(() => {
+    bar.style.transition = "width 7s linear";
+    bar.style.width = "0%";
+  }, 50);
+
+  oddTimer = setTimeout(() => {
+    document.getElementById("odd-status").innerText = "⏰ Время вышло";
+    setTimeout(exitOddGame, 800);
+  }, 7000);
+}
+
+function exitOddGame() {
+  clearTimeout(oddTimer);
+  document.getElementById("odd-game").classList.add("hidden");
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function pickRandom(arr, n) {
+  return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
 }
 
 // Следующий уровень

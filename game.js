@@ -40,6 +40,8 @@ let state = {
     income: 0,
     pos: 0,
     isRolling: false,
+    diceReady: true,          // есть ли ход прямо сейчас
+    nextDiceTime: 0,          // timestamp когда будет следующий ход
     buildings: [
         { id: "base", name: "База", cost: 0, income: 0, bought: true },
         { id: "cafe", name: "Кафе", cost: 500, income: 100, bought: false },
@@ -297,10 +299,62 @@ function renderDice(val) {
     }
 }
 
+// --- ТАЙМЕР КУБИКА ---
+const DICE_COOLDOWN = 2 * 60 * 60 * 1000; // 2 часа в мс
+
+function formatTimeLeft(ms) {
+    if (ms <= 0) return "";
+    const totalSec = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}ч ${m}м`;
+    if (m > 0) return `${m}м ${s}с`;
+    return `${s}с`;
+}
+
+function checkDiceTimer() {
+    const now = Date.now();
+    if (!state.nextDiceTime || now >= state.nextDiceTime) {
+        state.diceReady = true;
+    } else {
+        state.diceReady = false;
+    }
+    updateDiceBtn();
+}
+
+function updateDiceBtn() {
+    const now = Date.now();
+    const ms = state.nextDiceTime ? state.nextDiceTime - now : 0;
+
+    if (state.diceReady) {
+        rollBtn.disabled = false;
+        rollBtn.innerHTML = "🎲 Бросить кубик";
+        rollBtn.style.background = "";
+    } else {
+        rollBtn.disabled = true;
+        rollBtn.innerHTML = `⏳ ${formatTimeLeft(ms)}`;
+        rollBtn.style.background = "#444";
+    }
+}
+
+// Тикаем каждую секунду — обновляем таймер на кнопке
+setInterval(() => {
+    if (!state.diceReady) {
+        checkDiceTimer();
+        saveGame();
+    }
+}, 1000);
+
 rollBtn.onclick = () => {
     if(state.isRolling) return;
+    if(!state.diceReady) return;
+
     state.isRolling = true;
+    state.diceReady = false;
+    state.nextDiceTime = Date.now() + DICE_COOLDOWN;
     rollBtn.disabled = true;
+    saveGame();
 
     // Анимация
     diceEl.classList.add("roll-anim");
@@ -330,10 +384,9 @@ rollBtn.onclick = () => {
             if (stepsLeft <= 0) {
                 clearInterval(moveInt);
                 state.isRolling = false;
-                rollBtn.disabled = false;
-                processCell(); // Обработка клетки
-                saveGame(); // Сохраняем прогресс
-
+                updateDiceBtn();
+                processCell();
+                saveGame();
             }
         }, 150); // Скорость прыжка
     }, 600);
@@ -362,15 +415,21 @@ window.closeModal = function() {
     document.getElementById("modal").classList.add("hidden");
 }
 
-window.setTab = function(tab) {
+window.setTab = function(tab, btn) {
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    event.currentTarget.classList.add("active"); // Подсветка кнопки
+    if (btn) btn.classList.add("active");
 
-    if(tab === 'game') {
-        document.getElementById("city-screen").classList.add("hidden");
-    } else {
+    document.getElementById("city-screen").classList.add("hidden");
+    document.getElementById("cases-screen").classList.add("hidden");
+
+    if (tab === 'game') {
+        // game area visible by default
+    } else if (tab === 'city') {
         renderBuildings();
         document.getElementById("city-screen").classList.remove("hidden");
+    } else if (tab === 'cases') {
+        renderCasesScreen();
+        document.getElementById("cases-screen").classList.remove("hidden");
     }
 }
 
@@ -428,7 +487,7 @@ const MINIGAMES = [
   { name: "🧠 Запомни порядок", start: startMemoryGame },
   { name: "➕ Математика", start: startMathGame },
   { name: "❓ Найди лишнее", start: startOddGame },
-  { name: "🧩 Лабиринт", start: () => alert("Будет позже") },
+  { name: "🧩 Лабиринт", start: startMazeGame },
   { name: "🎯 Mini OSU", start: () => alert("Будет позже") },
   { name: "🧩 Пазл", start: () => alert("Будет позже") },
   { name: "🧠 Мемори", start: () => alert("Будет позже") },
@@ -457,8 +516,125 @@ function closeMinigameMenu() {
   document.getElementById("minigame-menu").classList.add("hidden");
 }
 
+// =====================
+// CASES SYSTEM
+// =====================
+
+// Твой Telegram-канал (замени на свой)
+const TG_CHANNEL = "https://t.me/your_channel"; // ← ЗАМЕНИ НА СВОЙ КАНАЛ
+const CASE_SAVE_KEY = "zombie_case_claimed_v1";
+
+// Призы в кейсе выжившего
+const CASE_PRIZES = [
+  { icon: "💰", name: "Мешок с деньгами", desc: "Ты нашёл тайник зомби!", reward: { type: "money", amount: 500 } },
+  { icon: "🏠", name: "Заброшенный склад", desc: "Новое здание для дохода!", reward: { type: "building", id: "warehouse" } },
+  { icon: "💎", name: "Бриллиант выжившего", desc: "Редкая находка! +1000$", reward: { type: "money", amount: 1000 } },
+  { icon: "🔫", name: "Арсенал зомби-хантера", desc: "Удача в следующих 5 ходах!", reward: { type: "luck", amount: 5 } },
+  { icon: "🧪", name: "Вирусная вакцина", desc: "Иммунитет к атаке! +300$", reward: { type: "money", amount: 300 } },
+  { icon: "🎯", name: "Снайперский прицел", desc: "Бонус к мини-играм! +200$", reward: { type: "money", amount: 200 } },
+  { icon: "🏆", name: "Трофей Апокалипсиса", desc: "Легендарная находка! +1500$", reward: { type: "money", amount: 1500 } },
+  { icon: "🧟", name: "Зомби-помощник", desc: "Охраняет базу! +150$/час", reward: { type: "income", amount: 150 } },
+];
+
+function isCaseClaimed() {
+  return localStorage.getItem(CASE_SAVE_KEY) === "1";
+}
+
+function markCaseClaimed() {
+  localStorage.setItem(CASE_SAVE_KEY, "1");
+}
+
+function renderCasesScreen() {
+  const btn = document.getElementById("caseOpenBtn");
+  const countEl = document.getElementById("case-count-display");
+  const hint = document.getElementById("case-hint");
+
+  if (isCaseClaimed()) {
+    btn.disabled = true;
+    btn.innerText = "✅ Кейс уже получен";
+    countEl.innerText = "Ты уже открыл свой кейс выжившего";
+    hint.style.display = "none";
+  } else {
+    btn.disabled = false;
+    btn.innerText = "📺 Подписаться и получить";
+    countEl.innerText = "🎁 У тебя есть 1 бесплатный кейс";
+    hint.style.display = "block";
+  }
+}
+
+window.openSubscribeCase = function() {
+  if (isCaseClaimed()) return;
+
+  // Открываем Telegram канал
+  tg.openTelegramLink(TG_CHANNEL);
+
+  // После небольшой задержки (юзер возвращается) — предлагаем открыть кейс
+  setTimeout(() => {
+    showCaseOpeningModal();
+  }, 1500);
+};
+
+function showCaseOpeningModal() {
+  const modal = document.getElementById("case-opening-modal");
+  const animIcon = document.querySelector(".case-anim-icon");
+  const titleEl = document.getElementById("case-result-title");
+  const textEl = document.getElementById("case-result-text");
+
+  // Сбрасываем
+  animIcon.innerText = "📦";
+  animIcon.className = "case-anim-icon";
+  titleEl.innerText = "";
+  textEl.innerText = "";
+  modal.classList.remove("hidden");
+
+  tg.HapticFeedback.impactOccurred("heavy");
+
+  // Через 1.5 сек открываем кейс
+  setTimeout(() => {
+    const prize = CASE_PRIZES[Math.floor(Math.random() * CASE_PRIZES.length)];
+
+    animIcon.innerText = prize.icon;
+    animIcon.classList.add("open");
+    titleEl.innerText = prize.name;
+    textEl.innerText = prize.desc;
+
+    // Применяем награду
+    applyPrize(prize.reward);
+    markCaseClaimed();
+    renderCasesScreen();
+
+    tg.HapticFeedback.notificationOccurred("success");
+  }, 1500);
+}
+
+function applyPrize(reward) {
+  if (reward.type === "money") {
+    state.balance += reward.amount;
+  } else if (reward.type === "income") {
+    state.income += reward.amount;
+  } else if (reward.type === "luck") {
+    // Можно расширить — пока просто +200$
+    state.balance += 200;
+  } else if (reward.type === "building") {
+    // Добавляем здание-склад если ещё нет
+    if (!state.buildings.find(b => b.id === "warehouse")) {
+      state.buildings.push({ id: "warehouse", name: "Склад (кейс)", cost: 0, income: 300, bought: true });
+      state.income += 300;
+    } else {
+      state.balance += 400; // Если уже есть — деньги
+    }
+  }
+  updateUI();
+  saveGame();
+}
+
+window.closeCaseModal = function() {
+  document.getElementById("case-opening-modal").classList.add("hidden");
+};
+
 initMap();
 loadGame();
+checkDiceTimer();
 loadOddBank(); 
 updateUI();
 renderBuildings();
@@ -938,4 +1114,89 @@ function makeOptions(answer, level) {
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+// =====================
+// MAZE GAME
+// =====================
+
+const maze = [
+  "###############",
+  "#P    #       #",
+  "# ### # ##### #",
+  "#   #   #     #",
+  "### ##### ### #",
+  "#     #     # #",
+  "# ### # ### # #",
+  "# #   # #   # #",
+  "# # ### # ### #",
+  "# #     #   # #",
+  "# ##### ### # #",
+  "#     #     # #",
+  "# ### ####### #",
+  "#     #      E#",
+  "###############"
+];
+
+let player = { x: 1, y: 1 };
+let exitCell = { x: 13, y: 13 };
+const cellSize = 20;
+
+function startMazeGame() {
+  document.getElementById("maze-game").classList.remove("hidden");
+  drawMaze();
+}
+
+function drawMaze() {
+  const canvas = document.getElementById("mazeCanvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < maze.length; y++) {
+    for (let x = 0; x < maze[y].length; x++) {
+      if (maze[y][x] === "#") {
+        ctx.fillStyle = "#2f3640";
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+
+  // exit
+  ctx.fillStyle = "#0984e3";
+  ctx.fillRect(exitCell.x * cellSize, exitCell.y * cellSize, cellSize, cellSize);
+
+  // player
+  ctx.fillStyle = "#00cec9";
+  ctx.beginPath();
+  ctx.arc(
+    player.x * cellSize + cellSize / 2,
+    player.y * cellSize + cellSize / 2,
+    cellSize / 2 - 2,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+}
+
+function movePlayer(dx, dy) {
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+
+  if (maze[ny][nx] === "#") return;
+
+  player.x = nx;
+  player.y = ny;
+  drawMaze();
+
+  if (player.x === exitCell.x && player.y === exitCell.y) {
+    setTimeout(() => {
+      alert("🏆 Ты прошёл лабиринт!");
+      exitMazeGame();
+    }, 200);
+  }
+}
+
+function exitMazeGame() {
+  document.getElementById("maze-game").classList.add("hidden");
+  player = { x: 1, y: 1 };
 }

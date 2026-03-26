@@ -24,7 +24,6 @@
     <main class="game-area">
         <div class="board-container">
             <canvas id="gameCanvas"></canvas>
-
             <div class="center-overlay">
                 <div id="toast" class="toast">Твой ход!</div>
                 <div id="dice-container" class="dice-box"></div>
@@ -35,22 +34,50 @@
 
     <div id="city-screen" class="screen hidden">
         <div class="screen-header">
-            <button class="back-btn" onclick="setTab('game')" style="background:none; border:none; color:white; font-size:30px; line-height:1; cursor:pointer;">&#8592;</button>
+            <button class="back-btn" onclick="setTab('game', null)" style="background:none; border:none; color:white; font-size:30px; line-height:1; cursor:pointer;">&#8592;</button>
             <h2>🏗 Твой Город</h2>
         </div>
         <div id="buildings-list" class="scroll-content"></div>
     </div>
 
-    <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="setTab('game')">
-            <span>🎲</span> Игра
-        </button>
-        <button class="nav-btn" onclick="setTab('city')">
-            <span>🏙</span> Город
-        </button>
-    </nav>
+    <div id="cases-screen" class="screen hidden">
+        <div class="screen-header">
+            <h2>📦 Кейсы</h2>
+        </div>
+        <div class="scroll-content">
+            <div class="case-subscribe-hint" id="case-hint">
+                🎁 Подпишись на наш Telegram-канал и получи кейс бесплатно!
+            </div>
+            <div class="case-card" id="sub-case">
+                <div class="case-icon">🧟</div>
+                <div class="case-name">Кейс Выжившего</div>
+                <div class="case-desc">Внутри случайный подарок от зомби-апокалипсиса</div>
+                <div class="case-count" id="case-count-display"></div>
+                <button class="case-open-btn" id="caseOpenBtn" onclick="openSubscribeCase()">
+                    📺 Подписаться и получить
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- НАВИГАЦИЯ — вне .app, fixed внизу -->
+<nav class="bottom-nav">
+    <button class="nav-btn active" onclick="setTab('game', this)">
+        <span>🎲</span>
+        <span class="nav-label">Игра</span>
+    </button>
+    <button class="nav-btn" onclick="setTab('city', this)">
+        <span>🏙</span>
+        <span class="nav-label">Город</span>
+    </button>
+    <button class="nav-btn" onclick="setTab('cases', this)">
+        <span>📦</span>
+        <span class="nav-label">Кейс</span>
+    </button>
+</nav>
+
+<!-- МОДАЛКИ -->
 <div id="modal" class="modal hidden">
     <div class="modal-content">
         <h3 id="modal-title">Заголовок</h3>
@@ -59,7 +86,17 @@
     </div>
 </div>
 
-<!-- МЕНЮ МИНИ-ИГР -->
+<div id="case-opening-modal" class="modal hidden">
+    <div class="modal-content case-opening-content">
+        <div id="case-anim-box" class="case-anim-box">
+            <div class="case-anim-icon">📦</div>
+        </div>
+        <h3 id="case-result-title" class="case-result-title"></h3>
+        <p id="case-result-text" class="case-result-text"></p>
+        <button onclick="closeCaseModal()">Забрать!</button>
+    </div>
+</div>
+
 <div id="minigame-menu" class="modal hidden">
   <div class="modal-content">
     <h3>🎮 Мини-игры</h3>
@@ -68,7 +105,6 @@
   </div>
 </div>
 
-<!-- MEMORY GAME -->
 <div id="memory-game" class="modal hidden">
   <div class="modal-content">
     <h3 id="memory-level">Уровень 1</h3>
@@ -78,46 +114,49 @@
   </div>
 </div>
 
-<!-- MATH GAME -->
 <div id="math-game" class="modal hidden">
   <div class="modal-content math-modal">
-
-    <!-- Полоска прямо сверху -->
     <div class="math-timer-top">
       <div id="math-timer-bar" class="math-timer-bar"></div>
     </div>
-
     <div class="math-top">
       <div id="math-level">Уровень 1 / 5</div>
     </div>
-
     <div id="math-question" class="math-question">2 + 2 = ?</div>
-
     <div id="math-answers" class="math-answers"></div>
-
     <p id="math-status" class="math-status"></p>
-
     <button onclick="exitMathGame()">Выйти</button>
   </div>
 </div>
-<!-- ODD ONE OUT GAME -->
+
 <div id="odd-game" class="modal hidden">
   <div class="modal-content odd-modal">
-
-    <!-- таймер сверху -->
     <div class="odd-timer-top">
       <div id="odd-timer-bar"></div>
     </div>
-
     <div id="odd-level" class="odd-level">Уровень 1 / 5</div>
-
     <div class="odd-question">Найди лишнее слово</div>
-
     <div id="odd-answers" class="odd-answers"></div>
-
     <div id="odd-status" class="odd-status"></div>
-
     <button class="exit-btn" onclick="exitOddGame()">Выйти</button>
+  </div>
+</div>
+
+<div id="maze-game" class="modal hidden">
+  <div class="modal-content maze-modal">
+    <div class="maze-header">
+      <span>🧩 Лабиринт</span>
+    </div>
+    <canvas id="mazeCanvas"></canvas>
+    <div class="joystick">
+      <button onclick="movePlayer(0,-1)">⬆️</button>
+      <div>
+        <button onclick="movePlayer(-1,0)">⬅️</button>
+        <button onclick="movePlayer(1,0)">➡️</button>
+      </div>
+      <button onclick="movePlayer(0,1)">⬇️</button>
+    </div>
+    <button onclick="exitMazeGame()">Выйти</button>
   </div>
 </div>
 

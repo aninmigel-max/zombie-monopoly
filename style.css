@@ -622,3 +622,298 @@ canvas {
     font-size: 15px;
     letter-spacing: 0.5px;
 }
+
+/* ===== CASE ROLL (CS2 стиль) ===== */
+.case-roll-wrap {
+  position: relative;
+  margin: 10px 0 20px;
+}
+
+.case-roll-viewport {
+  width: 300px;
+  height: 110px;
+  overflow: hidden;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 2px solid #444;
+  background: #111;
+  position: relative;
+}
+
+.case-roll-track {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  will-change: transform;
+}
+
+.case-roll-item {
+  min-width: 90px;
+  width: 90px;
+  height: 90px;
+  border-radius: 10px;
+  border: 2px solid #555;
+  background: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.cri-icon {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.cri-name {
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 4px;
+  line-height: 1.2;
+}
+
+/* Стрелка-указатель по центру */
+.case-roll-arrow {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  color: #ffd700;
+  filter: drop-shadow(0 0 4px #ffd700);
+  pointer-events: none;
+}
+
+/* Градиенты по краям viewport */
+.case-roll-viewport::before,
+.case-roll-viewport::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 60px;
+  z-index: 2;
+  pointer-events: none;
+}
+.case-roll-viewport::before {
+  left: 0;
+  background: linear-gradient(to right, #111, transparent);
+}
+.case-roll-viewport::after {
+  right: 0;
+  background: linear-gradient(to left, #111, transparent);
+}
+
+.case-result-rarity {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Модалка кейса — шире */
+.case-opening-content {
+  width: 92%;
+  max-width: 360px;
+  background: linear-gradient(145deg, #1a1a2e, #2d2d44);
+  border: 2px solid #ffd700;
+  padding: 20px 15px;
+}
+
+/* ===== CASE CHEST ANIMATION ===== */
+.case-opening-content {
+  width: 88%;
+  max-width: 320px;
+  background: linear-gradient(160deg, #1a1a2e, #2d2d44);
+  border: 2px solid #ffd700;
+  padding: 30px 20px 20px;
+  text-align: center;
+  border-radius: 20px;
+}
+
+.case-anim-wrap {
+  position: relative;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* СУНДУК */
+.case-chest {
+  position: relative;
+  width: 100px;
+  height: 80px;
+  filter: drop-shadow(0 8px 20px rgba(255,215,0,0.4));
+}
+
+.chest-lid {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 38px;
+  background: linear-gradient(135deg, #8B4513, #A0522D, #6B3410);
+  border-radius: 50% 50% 0 0 / 40% 40% 0 0;
+  border: 3px solid #5a2d0c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center bottom;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 2;
+}
+
+.chest-lock {
+  font-size: 18px;
+  margin-top: -4px;
+}
+
+.lid-open {
+  transform: rotateX(-130deg);
+}
+
+.chest-body {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 50px;
+  background: linear-gradient(135deg, #8B4513, #A0522D, #6B3410);
+  border-radius: 4px 4px 8px 8px;
+  border: 3px solid #5a2d0c;
+  overflow: hidden;
+}
+
+.chest-stripes {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 4px;
+  background: #5a2d0c;
+  transform: translateY(-50%);
+}
+.chest-stripes::before,
+.chest-stripes::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: #ffd700;
+}
+.chest-stripes::before { top: -2px; }
+.chest-stripes::after  { bottom: -2px; }
+
+/* ТРЯСКА */
+@keyframes chestShake {
+  0%,100% { transform: rotate(0deg) translateX(0); }
+  15%      { transform: rotate(-6deg) translateX(-4px); }
+  30%      { transform: rotate(6deg)  translateX(4px); }
+  45%      { transform: rotate(-5deg) translateX(-3px); }
+  60%      { transform: rotate(5deg)  translateX(3px); }
+  75%      { transform: rotate(-3deg) translateX(-2px); }
+  90%      { transform: rotate(3deg)  translateX(2px); }
+}
+.chest-shake {
+  animation: chestShake 0.9s ease-in-out;
+}
+
+/* МОНЕТЫ */
+.case-coins {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fly-coin {
+  position: absolute;
+  font-size: 22px;
+  animation: coinFly 1s ease-out forwards;
+  opacity: 1;
+}
+
+@keyframes coinFly {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
+}
+
+/* СУММА */
+.case-amount {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  margin-top: 10px;
+}
+
+.case-sub-text {
+  font-size: 14px;
+  color: #b2bec3;
+  margin-top: 4px;
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.case-claim-btn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(90deg, #ffd700, #ffaa00);
+  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255,215,0,0.35);
+}
+.case-claim-btn:active { transform: scale(0.97); }
+
+.hidden { display: none !important; }
+
+.case-test-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed #555;
+  background: transparent;
+  color: #777;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Кнопка Забрать с подсветкой */
+.case-claim-glow-btn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(90deg, #ffd700, #ffaa00, #ffd700);
+  background-size: 200% auto;
+  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  animation: glowPulse 1s ease-in-out infinite, shineBg 1.5s linear infinite;
+  box-shadow: 0 0 20px rgba(255,215,0,0.7), 0 0 40px rgba(255,215,0,0.4);
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(255,215,0,0.6), 0 0 30px rgba(255,215,0,0.3); transform: scale(1); }
+  50%       { box-shadow: 0 0 30px rgba(255,215,0,1),   0 0 60px rgba(255,215,0,0.6); transform: scale(1.03); }
+}
+
+@keyframes shineBg {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}

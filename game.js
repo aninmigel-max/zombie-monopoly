@@ -300,7 +300,7 @@ function renderDice(val) {
 }
 
 // --- ТАЙМЕР КУБИКА ---
-const DICE_COOLDOWN = 2 * 60 * 60 * 1000; // 2 часа в мс
+const DICE_COOLDOWN = 24 * 60 * 60 * 1000; // 24 часа в мс
 
 function formatTimeLeft(ms) {
     if (ms <= 0) return "";
@@ -520,117 +520,153 @@ function closeMinigameMenu() {
 // CASES SYSTEM
 // =====================
 
-// Твой Telegram-канал (замени на свой)
-const TG_CHANNEL = "https://t.me/your_channel"; // ← ЗАМЕНИ НА СВОЙ КАНАЛ
-const CASE_SAVE_KEY = "zombie_case_claimed_v1";
+const BOT_TOKEN     = "8224889131:AAFqL-MIOjFTaaX1R97g--S_a1JcJ013eog";  // ← замени
+const TG_CHANNEL_ID = "@piglick12";     // ← замени, например @zombie_news
 
-// Призы в кейсе выжившего
-const CASE_PRIZES = [
-  { icon: "💰", name: "Мешок с деньгами", desc: "Ты нашёл тайник зомби!", reward: { type: "money", amount: 500 } },
-  { icon: "🏠", name: "Заброшенный склад", desc: "Новое здание для дохода!", reward: { type: "building", id: "warehouse" } },
-  { icon: "💎", name: "Бриллиант выжившего", desc: "Редкая находка! +1000$", reward: { type: "money", amount: 1000 } },
-  { icon: "🔫", name: "Арсенал зомби-хантера", desc: "Удача в следующих 5 ходах!", reward: { type: "luck", amount: 5 } },
-  { icon: "🧪", name: "Вирусная вакцина", desc: "Иммунитет к атаке! +300$", reward: { type: "money", amount: 300 } },
-  { icon: "🎯", name: "Снайперский прицел", desc: "Бонус к мини-играм! +200$", reward: { type: "money", amount: 200 } },
-  { icon: "🏆", name: "Трофей Апокалипсиса", desc: "Легендарная находка! +1500$", reward: { type: "money", amount: 1500 } },
-  { icon: "🧟", name: "Зомби-помощник", desc: "Охраняет базу! +150$/час", reward: { type: "income", amount: 150 } },
-];
+const CASE_SAVE_KEY = "zombie_case_v9";
+const MONEY_PRIZES  = [100, 200, 300, 500, 750, 1000, 1500, 2000];
 
 function isCaseClaimed() {
   return localStorage.getItem(CASE_SAVE_KEY) === "1";
 }
-
 function markCaseClaimed() {
   localStorage.setItem(CASE_SAVE_KEY, "1");
 }
 
 function renderCasesScreen() {
-  const btn = document.getElementById("caseOpenBtn");
+  const btn     = document.getElementById("caseOpenBtn");
   const countEl = document.getElementById("case-count-display");
-  const hint = document.getElementById("case-hint");
+  const hint    = document.getElementById("case-hint");
+  if (!btn) return;
 
   if (isCaseClaimed()) {
-    btn.disabled = true;
+    btn.disabled  = true;
     btn.innerText = "✅ Кейс уже получен";
-    countEl.innerText = "Ты уже открыл свой кейс выжившего";
-    hint.style.display = "none";
+    if (countEl) countEl.innerText = "Ты уже получил подарок за подписку";
+    if (hint)    hint.style.display = "none";
   } else {
-    btn.disabled = false;
+    btn.disabled  = false;
     btn.innerText = "📺 Подписаться и получить";
-    countEl.innerText = "🎁 У тебя есть 1 бесплатный кейс";
-    hint.style.display = "block";
+    if (countEl) countEl.innerText = "🎁 Подпишись и получи деньги";
+    if (hint)    hint.style.display = "block";
   }
 }
 
-window.openSubscribeCase = function() {
+async function checkSubscription() {
+  try {
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return false;
+    const res  = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(TG_CHANNEL_ID)}&user_id=${userId}`);
+    const data = await res.json();
+    return data.ok && ["member","administrator","creator"].includes(data.result?.status);
+  } catch(e) { return false; }
+}
+
+window.openSubscribeCase = async function() {
   if (isCaseClaimed()) return;
+  const btn = document.getElementById("caseOpenBtn");
 
-  // Открываем Telegram канал
-  tg.openTelegramLink(TG_CHANNEL);
+  try { tg.openTelegramLink(`https://t.me/${TG_CHANNEL_ID.replace("@","")}`); }
+  catch(e) { window.open(`https://t.me/${TG_CHANNEL_ID.replace("@","")}`, "_blank"); }
 
-  // После небольшой задержки (юзер возвращается) — предлагаем открыть кейс
-  setTimeout(() => {
-    showCaseOpeningModal();
-  }, 1500);
+  btn.disabled  = true;
+  btn.innerText = "⏳ Проверяем подписку...";
+
+  await new Promise(r => setTimeout(r, 4000));
+
+  const inTg      = !!tg.initDataUnsafe?.user?.id;
+  const subscribed = inTg ? await checkSubscription() : true; // в браузере — тест
+
+  if (!subscribed) {
+    try { tg.HapticFeedback.notificationOccurred("error"); } catch(e) {}
+    btn.disabled  = false;
+    btn.innerText = "❌ Ты не подписан! Попробуй снова";
+    setTimeout(() => { btn.innerText = "📺 Подписаться и получить"; }, 3000);
+    return;
+  }
+
+  runCaseAnimation();
 };
 
-function showCaseOpeningModal() {
-  const modal = document.getElementById("case-opening-modal");
-  const animIcon = document.querySelector(".case-anim-icon");
-  const titleEl = document.getElementById("case-result-title");
-  const textEl = document.getElementById("case-result-text");
+// Тестовая кнопка — запускает анимацию напрямую
+window.testCaseAnim = function() {
+  if (isCaseClaimed()) return;
+  runCaseAnimation();
+};
 
-  // Сбрасываем
-  animIcon.innerText = "📦";
-  animIcon.className = "case-anim-icon";
-  titleEl.innerText = "";
-  textEl.innerText = "";
+function runCaseAnimation() {
+  const amount  = MONEY_PRIZES[Math.floor(Math.random() * MONEY_PRIZES.length)];
+  const modal   = document.getElementById("case-opening-modal");
+  const content = modal.querySelector(".modal-content");
+
+  content.innerHTML = `
+    <div class="case-anim-wrap">
+      <div class="case-chest" id="caseChest">
+        <div class="chest-lid" id="chestLid"><div class="chest-lock">🔒</div></div>
+        <div class="chest-body"><div class="chest-stripes"></div></div>
+      </div>
+      <div class="case-coins" id="caseCoins"></div>
+      <div id="caseAmount" style="display:none;font-size:44px;font-weight:900;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,0.7);margin-top:12px;">+${amount}$</div>
+      <div id="caseSubText" style="display:none;font-size:14px;color:#b2bec3;margin-top:4px;">Получено за подписку! 🧟</div>
+    </div>
+    <button id="caseClaimBtn" class="case-claim-glow-btn" style="display:none;" onclick="closeCaseModal()">💰 Забрать!</button>
+  `;
+
   modal.classList.remove("hidden");
 
-  tg.HapticFeedback.impactOccurred("heavy");
+  const chest = document.getElementById("caseChest");
+  chest.classList.add("chest-shake");
 
-  // Через 1.5 сек открываем кейс
+  // Открываем крышку
   setTimeout(() => {
-    const prize = CASE_PRIZES[Math.floor(Math.random() * CASE_PRIZES.length)];
+    chest.classList.remove("chest-shake");
+    document.getElementById("chestLid").classList.add("lid-open");
 
-    animIcon.innerText = prize.icon;
-    animIcon.classList.add("open");
-    titleEl.innerText = prize.name;
-    textEl.innerText = prize.desc;
+    // Монеты
+    setTimeout(() => {
+      const container = document.getElementById("caseCoins");
+      ["💰","💵","🪙","💴","💶"].forEach((sym, i) => {
+        for (let j = 0; j < 3; j++) {
+          const coin = document.createElement("div");
+          coin.className   = "fly-coin";
+          coin.innerText   = sym;
+          const angle = Math.random() * 360;
+          const dist  = 50 + Math.random() * 90;
+          coin.style.setProperty("--dx", Math.cos(angle * Math.PI/180) * dist + "px");
+          coin.style.setProperty("--dy", -(40 + Math.random() * 90) + "px");
+          coin.style.animationDelay = (Math.random() * 0.4) + "s";
+          container.appendChild(coin);
+        }
+      });
 
-    // Применяем награду
-    applyPrize(prize.reward);
-    markCaseClaimed();
-    renderCasesScreen();
+      // Показываем сумму
+      setTimeout(() => {
+        const amtEl = document.getElementById("caseAmount");
+        const subEl = document.getElementById("caseSubText");
+        const clBtn = document.getElementById("caseClaimBtn");
+        amtEl.style.display = "block";
+        subEl.style.display = "block";
+        clBtn.style.display = "block";
+        amtEl.style.animation = "popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both";
 
-    tg.HapticFeedback.notificationOccurred("success");
-  }, 1500);
-}
+        // Сразу помечаем как полученный — больше не открыть
+        state.balance += amount;
+        updateUI();
+        saveGame();
+        markCaseClaimed();
+        renderCasesScreen();
+        try { tg.HapticFeedback.notificationOccurred("success"); } catch(e) {}
+      }, 700);
 
-function applyPrize(reward) {
-  if (reward.type === "money") {
-    state.balance += reward.amount;
-  } else if (reward.type === "income") {
-    state.income += reward.amount;
-  } else if (reward.type === "luck") {
-    // Можно расширить — пока просто +200$
-    state.balance += 200;
-  } else if (reward.type === "building") {
-    // Добавляем здание-склад если ещё нет
-    if (!state.buildings.find(b => b.id === "warehouse")) {
-      state.buildings.push({ id: "warehouse", name: "Склад (кейс)", cost: 0, income: 300, bought: true });
-      state.income += 300;
-    } else {
-      state.balance += 400; // Если уже есть — деньги
-    }
-  }
-  updateUI();
-  saveGame();
+    }, 350);
+  }, 900);
 }
 
 window.closeCaseModal = function() {
   document.getElementById("case-opening-modal").classList.add("hidden");
 };
+
+
 
 initMap();
 loadGame();
